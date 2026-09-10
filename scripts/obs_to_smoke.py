@@ -14,6 +14,11 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--store", default=str(ROOT / "data" / "store"))
     p.add_argument("--out", default=str(ROOT / "data" / "smoke"))
+    p.add_argument(
+        "--run-date",
+        default="",
+        help="Only copy observations from this run_date. Empty = every run.",
+    )
     args = p.parse_args(argv)
 
     store = Path(args.store)
@@ -31,6 +36,8 @@ def main(argv: list[str] | None = None) -> int:
             if not line.strip():
                 continue
             rec = json.loads(line)
+            if args.run_date and rec.get("run_date") != args.run_date:
+                continue
             if rec.get("outcome") != "ok" or not rec.get("content_sha256"):
                 continue
             sha = rec["content_sha256"]

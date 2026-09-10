@@ -1,0 +1,140 @@
+# Crawl Policy Index — infrastructure denylist
+# version: 1
+# These pay-level domains show up in Tranco because of CDN, DNS, object-storage,
+# or connectivity-check traffic — not because they publish a website.
+# Matching: exact domain, or any subdomain of a listed suffix.
+# Corporate sites stay (akamai.com, cloudflare.com, amazon.com, google.com).
+
+# Akamai
+akamai.net
+akamaiedge.net
+akamaized.net
+akamaihd.net
+akadns.net
+akadns6.net
+akam.net
+edgekey.net
+edgesuite.net
+akamaitech.net
+
+# Amazon AWS / media CDN (amazon.com stays)
+amazonaws.com
+cloudfront.net
+awsglobalaccelerator.com
+media-amazon.com
+ssl-images-amazon.com
+images-amazon.com
+amazon-adsystem.com
+
+# Google infra (google.com / youtube.com stay)
+gvt1.com
+gvt2.com
+gvt3.com
+1e100.net
+googleusercontent.com
+googlevideo.com
+gstatic.com
+ggpht.com
+ytimg.com
+googleapis.com
+googleadservices.com
+googlesyndication.com
+doubleclick.net
+googlehosted.com
+googlezip.net
+youtube-nocookie.com
+
+# Microsoft Azure / update / identity (microsoft.com stays)
+windows.net
+trafficmanager.net
+azureedge.net
+azurefd.net
+azure.net
+msecnd.net
+msedge.net
+s-microsoft.com
+microsoftonline.com
+office.net
+windowsupdate.com
+msftncsi.com
+msftconnecttest.com
+msidentity.com
+trafficmanager.cn
+azurewebsites.net
+
+# Cloudflare product hostnames (cloudflare.com stays)
+cloudflare.net
+cloudflare-dns.com
+cloudflareinsights.com
+
+# Fastly (fastly.com stays)
+fastly.net
+fastlylb.net
+
+# Meta / ByteDance / X CDNs (facebook.com, instagram.com, tiktok.com, x.com stay)
+fbcdn.net
+facebook.net
+cdninstagram.com
+whatsapp.net
+tiktokcdn.com
+tiktokcdn-us.com
+byteoversea.com
+ibytedtos.com
+byteimg.com
+pstatp.com
+twimg.com
+licdn.com
+
+# Apple CDN (apple.com stays)
+aaplimg.com
+apple-dns.net
+mzstatic.com
+icloud-content.com
+cdn-apple.com
+
+# Adobe tags / other CDNs
+omtrdc.net
+demdex.net
+2o7.net
+typekit.net
+jsdelivr.net
+unpkg.com
+bootstrapcdn.com
+imgix.net
+kxcdn.com
+
+# China / other edge
+alicdn.com
+aliyuncs.com
+myqcloud.com
+hwcdn.net
+cdntip.com
+jomodns.com
+hichina.com
+wscdns.com
+kunluncan.com
+pv-cdn.net
+gwfb.net
+rocket-cdn.com
+avcdn.net
+kwai-cdn.com
+yximgs.com
+
+# DNS roots, parking, nameservers (iana.org stays)
+root-servers.net
+gtld-servers.net
+domaincontrol.com
+dns-parking.com
+
+# Tag managers / SDK hosts (not a website people visit)
+googletagmanager.com
+google-analytics.com
+googletagservices.com
+appsflyersdk.com
+
+# Extra Microsoft / ByteDance product hostnames
+static.microsoft
+office365.com
+ibyteimg.com
+fastly-edge.com
+bytefcdn-oversea.com
