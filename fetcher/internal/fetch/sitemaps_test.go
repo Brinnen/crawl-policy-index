@@ -24,6 +24,15 @@ func TestChooseSitemapRelativePath(t *testing.T) {
 	}
 }
 
+func TestWithWWW(t *testing.T) {
+	if withWWW("https://example.com/robots.txt") != "https://www.example.com/robots.txt" {
+		t.Fatal(withWWW("https://example.com/robots.txt"))
+	}
+	if withWWW("https://www.example.com/robots.txt") != "" {
+		t.Fatal("already www")
+	}
+}
+
 func TestChooseSitemapFallsBack(t *testing.T) {
 	u := ChooseSitemapURL("example.com", nil)
 	if u != "https://example.com/sitemap.xml" {

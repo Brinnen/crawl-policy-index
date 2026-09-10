@@ -14,7 +14,7 @@ fetcher:
   window_start_utc: "02:00"
   window_hours: 6
   shards: 1
-  workers_per_shard: 64
+  workers_per_shard: 32
   global_rate_limit_rps: 50
   per_host_inflight: 1
   per_ip_concurrent: 4
@@ -32,4 +32,4 @@ fetcher:
     attempts: 1
     backoff_s: [30, 90]
   user_agent: "CrawlPolicyIndex/1.0 (+https://crawlpolicyindex.org/bot)"
-  fetcher_version: "0.1.0"
+  fetcher_version: "0.1.1"

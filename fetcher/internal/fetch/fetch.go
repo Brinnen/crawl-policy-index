@@ -66,11 +66,15 @@ func New(cfg config.Config, st *store.FS) *Fetcher {
 	if tlsTO == 0 {
 		tlsTO = 10 * time.Second
 	}
-	dialer := &net.Dialer{Timeout: connect}
+	dialer := &net.Dialer{
+		Timeout:       connect,
+		FallbackDelay: 100 * time.Millisecond,
+		Resolver:      &net.Resolver{PreferGo: true},
+	}
 	transport := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
 		DialContext:           dialer.DialContext,
-		ForceAttemptHTTP2:     true,
+		ForceAttemptHTTP2:     false,
 		MaxIdleConns:          256,
 		IdleConnTimeout:       30 * time.Second,
 		TLSHandshakeTimeout:   tlsTO,
@@ -134,8 +138,25 @@ func (f *Fetcher) FetchAt(ctx context.Context, domain, resource, runDate, panelV
 
 	start := time.Now()
 	res, err := f.attempt(ctx, domain, httpsURL, capBytes, "https")
+	if isDNSErr(err) && f.cfg.Fetcher.ForceBaseURL == "" {
+		timer := time.NewTimer(250 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+		case <-timer.C:
+			res, err = f.attempt(ctx, domain, httpsURL, capBytes, "https")
+		}
+	}
 	if err != nil && shouldFallbackHTTP(err) && f.cfg.Fetcher.ForceBaseURL == "" {
 		res, err = f.attempt(ctx, domain, httpURL, capBytes, "http")
+	}
+	if isDNSErr(err) && targetURL == "" && f.cfg.Fetcher.ForceBaseURL == "" {
+		if wwwHTTPS := withWWW(httpsURL); wwwHTTPS != "" {
+			res, err = f.attempt(ctx, domain, wwwHTTPS, capBytes, "https")
+			if err != nil && shouldFallbackHTTP(err) {
+				res, err = f.attempt(ctx, domain, withWWW(httpURL), capBytes, "http")
+			}
+		}
 	}
 	obs.LatencyMS = int(time.Since(start).Milliseconds())
 	if res != nil {
@@ -270,8 +291,7 @@ func (f *Fetcher) backoff(ctx context.Context) error {
 
 func retryable(outcome string) bool {
 	return outcome == OutcomeRateLimited || outcome == OutcomeServerError ||
-		outcome == OutcomeTimeout || outcome == OutcomeDNS ||
-		outcome == OutcomeTLS || outcome == OutcomeConnRefused
+		outcome == OutcomeTimeout || outcome == OutcomeTLS || outcome == OutcomeConnRefused
 }
 
 func retryableErr(err error) bool {
@@ -437,6 +457,31 @@ func osTimeout(err error) bool {
 func shouldFallbackHTTP(err error) bool {
 	o, _ := classifyNetErr(err)
 	return o == OutcomeTLS || o == OutcomeConnRefused || o == OutcomeTimeout
+}
+
+func isDNSErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	o, _ := classifyNetErr(err)
+	return o == OutcomeDNS
+}
+
+func withWWW(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return ""
+	}
+	host := u.Hostname()
+	if strings.HasPrefix(strings.ToLower(host), "www.") {
+		return ""
+	}
+	if p := u.Port(); p != "" {
+		u.Host = "www." + host + ":" + p
+	} else {
+		u.Host = "www." + host
+	}
+	return u.String()
 }
 
 func crossedRegDomain(requestedHost, finalHost string) bool {

@@ -40,7 +40,7 @@ fetcher:
     attempts: 1
     backoff_s: [30, 90]
   user_agent: "CrawlPolicyIndex/1.0 (+https://crawlpolicyindex.org/bot)"
-  fetcher_version: "0.1.0"
+  fetcher_version: "0.1.1"
 
 parser:
   version: "1.0.0"
