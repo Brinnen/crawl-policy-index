@@ -16,7 +16,9 @@ bin/
 
 data/*
 !data/.gitkeep
-!data/panel-*.csv
+!data/panel-mini.csv
+!data/panel-smoke.csv
+data/panel-tranco*.csv
 .env
 .env.*
 !.env.example
