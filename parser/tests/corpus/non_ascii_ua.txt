@@ -1,0 +1,4 @@
+User-agent: Böt
+Disallow: /
+User-agent: *
+Disallow: /tmp

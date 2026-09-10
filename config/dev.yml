@@ -1,0 +1,59 @@
+panel:
+  version: "dev"
+  path: "data/panel-dev.csv"
+
+storage:
+  backend: "fs"
+  root: "../data/store"
+  s3:
+    endpoint: "http://localhost:9000"
+    region: "us-east-1"
+    access_key: "minioadmin"
+    secret_key: "minioadmin"
+    bucket_raw: "cpi-raw"
+    bucket_obs: "cpi-obs"
+    use_path_style: true
+
+database:
+  dsn: "postgresql://cpi:cpi@localhost:5432/cpi"
+
+fetcher:
+  resources: [robots_txt, llms_txt, sitemap_xml]
+  window_start_utc: "02:00"
+  window_hours: 6
+  shards: 1
+  workers_per_shard: 32
+  global_rate_limit_rps: 50
+  per_host_inflight: 1
+  per_ip_concurrent: 4
+  per_asn_concurrent: 20
+  timeouts:
+    connect_s: 5
+    tls_s: 10
+    total_s: 15
+  max_redirects: 3
+  size_caps_bytes:
+    robots_txt: 1048576
+    llms_txt: 2097152
+    sitemap_xml: 10485760
+  retry:
+    attempts: 1
+    backoff_s: [30, 90]
+  user_agent: "CrawlPolicyIndex/1.0 (+https://crawlpolicyindex.org/bot)"
+  fetcher_version: "0.1.0"
+
+parser:
+  version: "1.0.0"
+  parse_cap_bytes: 512000
+  probe_paths:
+    - "/"
+    - "/index.html"
+    - "/article/example"
+    - "/products/example"
+    - "/blog/example"
+
+backfill:
+  rate_limit_rps: 1.0
+  from_date: "2022-01-01"
+  domains_top_n: 50000
+  max_captures_per_domain: 40

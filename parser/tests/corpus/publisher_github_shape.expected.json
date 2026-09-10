@@ -1,0 +1,16 @@
+{
+  "detect": "robots",
+  "sitemaps": [
+    "https://github.com/sitemap.xml"
+  ],
+  "wildcard": {
+    "state": "PARTIAL",
+    "has_wildcard_group": true
+  },
+  "agents": {
+    "openai-gptbot": {
+      "state": "PARTIAL",
+      "rule_source": "WILDCARD"
+    }
+  }
+}

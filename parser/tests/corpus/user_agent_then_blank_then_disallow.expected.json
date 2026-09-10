@@ -1,0 +1,7 @@
+{
+  "detect": "robots",
+  "wildcard": {
+    "state": "PARTIAL",
+    "has_wildcard_group": true
+  }
+}

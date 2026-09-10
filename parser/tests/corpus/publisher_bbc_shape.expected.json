@@ -1,0 +1,21 @@
+{
+  "detect": "robots",
+  "wildcard": {
+    "state": "PARTIAL",
+    "has_wildcard_group": true
+  },
+  "agents": {
+    "openai-gptbot": {
+      "state": "BLOCKED",
+      "rule_source": "EXPLICIT"
+    },
+    "anthropic-claudebot": {
+      "state": "BLOCKED",
+      "rule_source": "EXPLICIT"
+    },
+    "microsoft-bingbot": {
+      "state": "PARTIAL",
+      "rule_source": "WILDCARD"
+    }
+  }
+}

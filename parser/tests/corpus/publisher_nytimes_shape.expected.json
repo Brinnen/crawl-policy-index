@@ -1,0 +1,25 @@
+{
+  "detect": "robots",
+  "wildcard": {
+    "state": "PARTIAL",
+    "has_wildcard_group": true
+  },
+  "agents": {
+    "openai-gptbot": {
+      "state": "BLOCKED",
+      "rule_source": "EXPLICIT"
+    },
+    "google-extended": {
+      "state": "BLOCKED",
+      "rule_source": "EXPLICIT"
+    },
+    "commoncrawl-ccbot": {
+      "state": "BLOCKED",
+      "rule_source": "EXPLICIT"
+    },
+    "google-googlebot": {
+      "state": "PARTIAL",
+      "rule_source": "WILDCARD"
+    }
+  }
+}

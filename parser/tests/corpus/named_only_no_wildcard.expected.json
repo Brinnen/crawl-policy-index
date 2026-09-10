@@ -1,0 +1,17 @@
+{
+  "detect": "robots",
+  "wildcard": {
+    "state": "ALLOWED",
+    "has_wildcard_group": false
+  },
+  "agents": {
+    "openai-gptbot": {
+      "state": "BLOCKED",
+      "rule_source": "EXPLICIT"
+    },
+    "anthropic-claudebot": {
+      "state": "ALLOWED",
+      "rule_source": "NONE"
+    }
+  }
+}

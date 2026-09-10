@@ -1,0 +1,9 @@
+{
+  "detect": "robots",
+  "agents": {
+    "commoncrawl-ccbot": {
+      "state": "PARTIAL",
+      "rule_source": "EXPLICIT"
+    }
+  }
+}

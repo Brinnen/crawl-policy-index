@@ -1,0 +1,13 @@
+{
+  "detect": "robots",
+  "wildcard": {
+    "state": "BLOCKED",
+    "has_wildcard_group": true
+  },
+  "agents": {
+    "google-googlebot": {
+      "state": "BLOCKED",
+      "rule_source": "WILDCARD"
+    }
+  }
+}

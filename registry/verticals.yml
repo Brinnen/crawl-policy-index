@@ -1,0 +1,21 @@
+# Vertical taxonomy. Axel owns the labels; this file is the assignment source.
+# A domain may appear in multiple verticals. Unknown is valid — do not guess.
+
+version: "1.0.0"
+
+verticals:
+  - slug: news
+    label: News and publishers
+  - slug: ecommerce
+    label: Ecommerce
+  - slug: gov
+    label: Government
+  - slug: edu
+    label: Education
+  - slug: tech
+    label: Technology
+  - slug: other
+    label: Other / unassigned
+
+# Hand-maintained news stratum (~120 countries). Start empty; WP0 fills this.
+news_domains: []

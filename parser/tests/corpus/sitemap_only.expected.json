@@ -1,0 +1,17 @@
+{
+  "detect": "robots",
+  "sitemaps": [
+    "https://example.com/sitemap.xml",
+    "https://example.com/news.xml"
+  ],
+  "wildcard": {
+    "state": "ALLOWED",
+    "has_wildcard_group": false
+  },
+  "agents": {
+    "openai-gptbot": {
+      "state": "ALLOWED",
+      "rule_source": "NONE"
+    }
+  }
+}

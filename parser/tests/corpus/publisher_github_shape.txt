@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /*/pulse
+Disallow: /login
+Allow: /
+
+Sitemap: https://github.com/sitemap.xml

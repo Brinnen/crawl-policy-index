@@ -1,0 +1,13 @@
+{
+  "detect": "robots",
+  "wildcard": {
+    "state": "ALLOWED",
+    "has_wildcard_group": true
+  },
+  "agents": {
+    "openai-gptbot": {
+      "state": "ALLOWED",
+      "rule_source": "WILDCARD"
+    }
+  }
+}

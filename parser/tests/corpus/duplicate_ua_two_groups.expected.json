@@ -1,0 +1,9 @@
+{
+  "detect": "robots",
+  "agents": {
+    "openai-gptbot": {
+      "state": "PARTIAL",
+      "rule_source": "EXPLICIT"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crawl-policy-index"
+version = "0.1.0"
+description = "Longitudinal record of site-declared AI crawl policy"
+requires-python = ">=3.12"
+dependencies = [
+  "pyyaml>=6.0",
+  "psycopg[binary]>=3.2",
+  "lxml>=5.0",
+  "markdown-it-py>=3.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+include = ["cpi_parser*"]
+
+[tool.setuptools.package-dir]
+cpi_parser = "parser/cpi_parser"
+
+[tool.pytest.ini_options]
+testpaths = ["parser/tests", "panel/tests", "warehouse/tests"]
+pythonpath = ["parser", "panel", "warehouse", "warehouse/load"]
+addopts = "-q"

@@ -1,0 +1,402 @@
+# =====================================================================
+# Crawl Policy Index — agent registry
+#
+# SOURCE OF TRUTH for every AI agent we measure. Loaded into the `agent`
+# table by warehouse/load/load_agents.py. Never edit the table directly.
+#
+# ---------------------------------------------------------------------
+# READ THIS BEFORE USING THE FILE
+#
+# Every entry ships with `verified: false`. This is deliberate.
+#
+# A `ua_token` may only be flipped to `verified: true` after a human has
+# opened that entry's `documented_url`, confirmed the operator publishes
+# that exact token, and recorded the check in `verified_on` / `verified_by`.
+#
+# `effective_policy()` filters to `verified AND active`, so an unverified
+# agent is collected and stored but never appears in a published figure.
+# That is the safety property: a wrong token can waste storage, but it
+# cannot produce a wrong headline.
+#
+# Verifying all ~40 tokens is a WP2 acceptance criterion. Budget half a
+# day. Cross-check against https://github.com/ai-robots-txt/ai.robots.txt
+# but treat it as a hint, not a source — it is community-maintained and
+# has carried stale tokens.
+#
+# `confidence` below is the spec author's prior, recorded to help you
+# prioritise the checking, NOT a substitute for it:
+#   high   — widely documented, stable, low risk
+#   medium — real but check the exact spelling and current status
+#   low    — may be renamed, deprecated, or never have existed
+#
+# ---------------------------------------------------------------------
+# FIELD SEMANTICS
+#
+#   slug           stable internal id, never changes once published
+#   ua_token       the literal product token as it appears in robots.txt.
+#                  Matched case-insensitively, EXACT TOKEN, not substring.
+#   purpose        editorial taxonomy — see below. This is a public claim.
+#   operator       the company, used to group agents for the
+#                  training-vs-search divergence analysis
+#
+# PURPOSE TAXONOMY — the intellectual core of the product. Most published
+# commentary collapses all of these into "AI bots", which is precisely the
+# mistake that makes our data worth having. Axel owns this taxonomy and
+# must sign off on any change.
+#
+#   training        crawls in order to build a training corpus
+#   search_index    builds a retrieval index for an AI search product
+#   user_fetch      fetches one URL on demand, triggered by a user action
+#   agentic         autonomous browsing agent acting on a task
+#   opt_out_token   NOT a crawler — a token honoured purely as an opt-out
+#                   signal. Google-Extended is the canonical case: it never
+#                   fetches anything, so treating it as a crawler in charts
+#                   is simply wrong.
+#   unknown         purpose not credibly established. Excluded from all
+#                   purpose-based aggregates.
+# =====================================================================
+
+version: "1.0.0"
+defaults:
+  verified: false
+  active: true
+
+agents:
+
+  # ------------------------------------------------------------------
+  # OpenAI — the cleanest example of purpose separation, and the pair
+  # that carries the divergence story. A site blocking GPTBot while
+  # allowing OAI-SearchBot is refusing training but accepting citation.
+  # ------------------------------------------------------------------
+  - slug: openai-gptbot
+    ua_token: GPTBot
+    display_name: GPTBot
+    operator: OpenAI
+    purpose: training
+    documented_url: https://platform.openai.com/docs/bots
+    confidence: high
+
+  - slug: openai-searchbot
+    ua_token: OAI-SearchBot
+    display_name: OAI-SearchBot
+    operator: OpenAI
+    purpose: search_index
+    documented_url: https://platform.openai.com/docs/bots
+    confidence: high
+
+  - slug: openai-chatgpt-user
+    ua_token: ChatGPT-User
+    display_name: ChatGPT-User
+    operator: OpenAI
+    purpose: user_fetch
+    documented_url: https://platform.openai.com/docs/bots
+    confidence: high
+    notes: >
+      Fires when a user asks ChatGPT to open a specific link. Blocking it
+      blocks a human's explicit request, which is a materially different
+      decision from blocking training. Chart it separately, always.
+
+  # ------------------------------------------------------------------
+  # Anthropic
+  # ------------------------------------------------------------------
+  - slug: anthropic-claudebot
+    ua_token: ClaudeBot
+    display_name: ClaudeBot
+    operator: Anthropic
+    purpose: training
+    documented_url: https://support.anthropic.com/en/articles/8896518
+    confidence: high
+
+  - slug: anthropic-claude-user
+    ua_token: Claude-User
+    display_name: Claude-User
+    operator: Anthropic
+    purpose: user_fetch
+    documented_url: https://support.anthropic.com/en/articles/8896518
+    confidence: medium
+
+  - slug: anthropic-claude-searchbot
+    ua_token: Claude-SearchBot
+    display_name: Claude-SearchBot
+    operator: Anthropic
+    purpose: search_index
+    confidence: medium
+
+  - slug: anthropic-ai-legacy
+    ua_token: anthropic-ai
+    display_name: anthropic-ai (legacy)
+    operator: Anthropic
+    purpose: training
+    confidence: medium
+    notes: >
+      Legacy token still present in a great many robots.txt files copied
+      from old blocklists. Its continued presence is itself a useful
+      signal: it indicates a stale, copy-pasted policy rather than an
+      actively maintained one. Consider a "policy freshness" metric
+      built on tokens like this one and Claude-Web.
+
+  - slug: anthropic-claude-web-legacy
+    ua_token: Claude-Web
+    display_name: Claude-Web (legacy)
+    operator: Anthropic
+    purpose: unknown
+    confidence: low
+
+  # ------------------------------------------------------------------
+  # Google — note that Google-Extended is NOT a crawler. Getting this
+  # wrong is the most common error in published AI-blocking analyses.
+  # ------------------------------------------------------------------
+  - slug: google-extended
+    ua_token: Google-Extended
+    display_name: Google-Extended
+    operator: Google
+    purpose: opt_out_token
+    documented_url: https://developers.google.com/search/docs/crawling-indexing/overview-google-crawlers
+    confidence: high
+    notes: >
+      Does not fetch anything. It is a control token for Gemini training
+      and grounding. Never include it in "crawler traffic" framing and
+      never sum it with actual crawlers.
+
+  - slug: google-googlebot
+    ua_token: Googlebot
+    display_name: Googlebot
+    operator: Google
+    purpose: search_index
+    documented_url: https://developers.google.com/search/docs/crawling-indexing/overview-google-crawlers
+    confidence: high
+    notes: >
+      Included as the control baseline. Blocking Googlebot is nearly
+      unheard of, so it calibrates the panel: if our numbers ever show a
+      meaningful share of sites blocking Googlebot, we have a parser bug,
+      not a finding. Use it as a permanent sanity check.
+
+  - slug: google-cloudvertexbot
+    ua_token: Google-CloudVertexBot
+    display_name: Google-CloudVertexBot
+    operator: Google
+    purpose: training
+    confidence: medium
+
+  # ------------------------------------------------------------------
+  # Perplexity
+  # ------------------------------------------------------------------
+  - slug: perplexity-bot
+    ua_token: PerplexityBot
+    display_name: PerplexityBot
+    operator: Perplexity
+    purpose: search_index
+    documented_url: https://docs.perplexity.ai/guides/bots
+    confidence: high
+
+  - slug: perplexity-user
+    ua_token: Perplexity-User
+    display_name: Perplexity-User
+    operator: Perplexity
+    purpose: user_fetch
+    confidence: medium
+
+  # ------------------------------------------------------------------
+  # Common Crawl — the substrate under most open training corpora, and
+  # the oldest token in this file. Its blocking curve is the longest
+  # time series available and the natural spine of the Wayback backfill.
+  # ------------------------------------------------------------------
+  - slug: commoncrawl-ccbot
+    ua_token: CCBot
+    display_name: CCBot
+    operator: Common Crawl
+    purpose: training
+    documented_url: https://commoncrawl.org/faq
+    confidence: high
+
+  # ------------------------------------------------------------------
+  # Meta
+  # ------------------------------------------------------------------
+  - slug: meta-externalagent
+    ua_token: meta-externalagent
+    display_name: meta-externalagent
+    operator: Meta
+    purpose: training
+    confidence: medium
+
+  - slug: meta-externalfetcher
+    ua_token: meta-externalfetcher
+    display_name: meta-externalfetcher
+    operator: Meta
+    purpose: user_fetch
+    confidence: medium
+
+  - slug: meta-facebookbot
+    ua_token: FacebookBot
+    display_name: FacebookBot
+    operator: Meta
+    purpose: unknown
+    confidence: medium
+
+  # ------------------------------------------------------------------
+  # Apple
+  # ------------------------------------------------------------------
+  - slug: apple-applebot
+    ua_token: Applebot
+    display_name: Applebot
+    operator: Apple
+    purpose: search_index
+    documented_url: https://support.apple.com/en-us/119829
+    confidence: high
+
+  - slug: apple-applebot-extended
+    ua_token: Applebot-Extended
+    display_name: Applebot-Extended
+    operator: Apple
+    purpose: opt_out_token
+    documented_url: https://support.apple.com/en-us/119829
+    confidence: high
+    notes: Same modelling caveat as Google-Extended — a signal, not a crawler.
+
+  # ------------------------------------------------------------------
+  # Microsoft
+  # ------------------------------------------------------------------
+  - slug: microsoft-bingbot
+    ua_token: bingbot
+    display_name: bingbot
+    operator: Microsoft
+    purpose: search_index
+    confidence: high
+    notes: Second control baseline alongside Googlebot.
+
+  # ------------------------------------------------------------------
+  # ByteDance
+  # ------------------------------------------------------------------
+  - slug: bytedance-bytespider
+    ua_token: Bytespider
+    display_name: Bytespider
+    operator: ByteDance
+    purpose: training
+    confidence: high
+    notes: >
+      Among the most frequently blocked tokens in the wild, largely on
+      reputational grounds rather than considered policy. Worth a
+      dedicated cut in the report.
+
+  # ------------------------------------------------------------------
+  # Amazon
+  # ------------------------------------------------------------------
+  - slug: amazon-amazonbot
+    ua_token: Amazonbot
+    display_name: Amazonbot
+    operator: Amazon
+    purpose: search_index
+    confidence: medium
+
+  # ------------------------------------------------------------------
+  # Others — verify each individually. Several of these are likely
+  # stale, renamed, or were never real; the low-confidence entries are
+  # exactly why nothing here is verified by default.
+  # ------------------------------------------------------------------
+  - slug: cohere-ai
+    ua_token: cohere-ai
+    display_name: cohere-ai
+    operator: Cohere
+    purpose: training
+    confidence: medium
+
+  - slug: cohere-training-crawler
+    ua_token: cohere-training-data-crawler
+    display_name: cohere-training-data-crawler
+    operator: Cohere
+    purpose: training
+    confidence: low
+
+  - slug: ai2-bot
+    ua_token: AI2Bot
+    display_name: AI2Bot
+    operator: Allen Institute for AI
+    purpose: training
+    confidence: medium
+
+  - slug: diffbot
+    ua_token: Diffbot
+    display_name: Diffbot
+    operator: Diffbot
+    purpose: training
+    confidence: medium
+
+  - slug: you-youbot
+    ua_token: YouBot
+    display_name: YouBot
+    operator: You.com
+    purpose: search_index
+    confidence: medium
+
+  - slug: mistral-user
+    ua_token: MistralAI-User
+    display_name: MistralAI-User
+    operator: Mistral
+    purpose: user_fetch
+    confidence: low
+
+  - slug: huawei-pangubot
+    ua_token: PanguBot
+    display_name: PanguBot
+    operator: Huawei
+    purpose: training
+    confidence: low
+
+  - slug: huawei-petalbot
+    ua_token: PetalBot
+    display_name: PetalBot
+    operator: Huawei
+    purpose: search_index
+    confidence: medium
+
+  - slug: omgili-bot
+    ua_token: omgilibot
+    display_name: omgilibot
+    operator: Webz.io
+    purpose: training
+    confidence: medium
+
+  - slug: webzio-extended
+    ua_token: Webzio-Extended
+    display_name: Webzio-Extended
+    operator: Webz.io
+    purpose: opt_out_token
+    confidence: low
+
+  - slug: imagesift-bot
+    ua_token: ImagesiftBot
+    display_name: ImagesiftBot
+    operator: ImageSift
+    purpose: training
+    confidence: low
+
+  - slug: timpi-bot
+    ua_token: Timpibot
+    display_name: Timpibot
+    operator: Timpi
+    purpose: search_index
+    confidence: low
+
+# =====================================================================
+# GAPS TO CLOSE BEFORE LAUNCH
+#
+#  1. xAI / Grok — believed to operate a crawler; token not established
+#     here. Find the operator's own documentation before adding it.
+#     Do NOT add a token sourced only from a blog post.
+#
+#  2. DeepSeek, Alibaba/Qwen, Zhipu — Chinese labs are underrepresented
+#     in every Western blocklist, which is itself a publishable finding.
+#     Research properly; a gap in the registry becomes a false zero in
+#     the charts, and a false zero is worse than an admitted unknown.
+#
+#  3. Cloudflare pay-per-crawl signalling. Since 2026 a site's crawl
+#     policy is not fully expressed in robots.txt — some of it lives in
+#     HTTP 402 responses and signed-agent headers. v1 measures robots.txt
+#     only and `docs/methodology.md` must say so in plain words. Scoping
+#     a v2 that also observes the 402 layer is the single most valuable
+#     follow-on to this registry.
+#
+#  4. SEO crawlers (SemrushBot, AhrefsBot, etc.) are deliberately absent.
+#     They are not AI agents and including them would muddy every
+#     aggregate. Resist the request when it comes.
+# =====================================================================

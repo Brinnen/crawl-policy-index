@@ -1,0 +1,17 @@
+{
+  "detect": "robots",
+  "wildcard": {
+    "state": "ALLOWED",
+    "has_wildcard_group": true
+  },
+  "agents": {
+    "bytedance-bytespider": {
+      "state": "BLOCKED",
+      "rule_source": "EXPLICIT"
+    },
+    "openai-gptbot": {
+      "state": "ALLOWED",
+      "rule_source": "WILDCARD"
+    }
+  }
+}

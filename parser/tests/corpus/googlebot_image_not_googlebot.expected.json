@@ -1,0 +1,13 @@
+{
+  "detect": "robots",
+  "wildcard": {
+    "state": "ALLOWED",
+    "has_wildcard_group": true
+  },
+  "agents": {
+    "google-googlebot": {
+      "state": "ALLOWED",
+      "rule_source": "WILDCARD"
+    }
+  }
+}
