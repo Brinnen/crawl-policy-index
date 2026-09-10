@@ -82,18 +82,30 @@ func main() {
 				if *shard >= 0 && sh != *shard {
 					continue
 				}
+				sitemapURL := ""
 				for _, resource := range cfg.Fetcher.Resources {
 					key := d.Domain + "|" + resource
 					if _, ok := done[key]; ok {
 						continue
 					}
-					obs, err := f.Fetch(ctx, d.Domain, resource, date, cfg.Panel.Version)
+					var obs store.Observation
+					var err error
+					if resource == "sitemap_xml" && sitemapURL != "" {
+						obs, err = f.FetchAt(ctx, d.Domain, resource, date, cfg.Panel.Version, sitemapURL)
+					} else {
+						obs, err = f.Fetch(ctx, d.Domain, resource, date, cfg.Panel.Version)
+					}
 					if err != nil {
 						if ctx.Err() != nil {
 							return
 						}
 						log.Printf("fetch error %s %s: %v", d.Domain, resource, err)
 						continue
+					}
+					if resource == "robots_txt" && obs.Outcome == fetch.OutcomeOK && obs.ContentSHA256 != "" {
+						if body, rerr := st.GetBlob(obs.ContentSHA256); rerr == nil {
+							sitemapURL = fetch.ChooseSitemapURL(d.Domain, fetch.DeclaredSitemaps(body))
+						}
 					}
 					if err := st.WriteObservation(sh, obs); err != nil {
 						log.Printf("write obs: %v", err)

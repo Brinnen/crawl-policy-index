@@ -276,6 +276,37 @@ func TestResumeSkipsRecordedPairs(t *testing.T) {
 	}
 }
 
+func TestFetchUsesDeclaredSitemap(t *testing.T) {
+	var saw string
+	f, _, _ := newFetcher(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/robots.txt" {
+			_, _ = w.Write([]byte("User-agent: *\nAllow: /\nSitemap: https://example.com/sitemap_index.xml\n"))
+			return
+		}
+		saw = r.URL.Path
+		_, _ = w.Write([]byte(`<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`))
+	}))
+	robots, err := f.Fetch(context.Background(), "example.com", "robots_txt", "2026-09-08", "dev")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := f.store.GetBlob(robots.ContentSHA256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	target := ChooseSitemapURL("example.com", DeclaredSitemaps(body))
+	obs, err := f.FetchAt(context.Background(), "example.com", "sitemap_xml", "2026-09-08", "dev", target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if obs.Outcome != OutcomeOK {
+		t.Fatalf("outcome %s", obs.Outcome)
+	}
+	if saw != "/sitemap_index.xml" {
+		t.Fatalf("fetched %s want /sitemap_index.xml", saw)
+	}
+}
+
 func TestAllOutcomesListed(t *testing.T) {
 	if len(AllOutcomes) != 13 {
 		t.Fatalf("want 13 outcomes, got %d", len(AllOutcomes))

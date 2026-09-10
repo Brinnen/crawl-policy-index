@@ -104,6 +104,10 @@ type result struct {
 }
 
 func (f *Fetcher) Fetch(ctx context.Context, domain, resource, runDate, panelVersion string) (store.Observation, error) {
+	return f.FetchAt(ctx, domain, resource, runDate, panelVersion, "")
+}
+
+func (f *Fetcher) FetchAt(ctx context.Context, domain, resource, runDate, panelVersion, targetURL string) (store.Observation, error) {
 	path := panel.ResourcePath(resource)
 	capBytes := f.cfg.Fetcher.SizeCapsBytes[resource]
 	if capBytes == 0 {
@@ -126,12 +130,7 @@ func (f *Fetcher) Fetch(ctx context.Context, domain, resource, runDate, panelVer
 		return obs, nil
 	}
 
-	httpsURL := "https://" + domain + path
-	httpURL := "http://" + domain + path
-	if base := strings.TrimRight(f.cfg.Fetcher.ForceBaseURL, "/"); base != "" {
-		httpsURL = base + path
-		httpURL = base + path
-	}
+	httpsURL, httpURL := f.targetURLs(domain, path, targetURL)
 
 	start := time.Now()
 	res, err := f.attempt(ctx, domain, httpsURL, capBytes, "https")
@@ -155,6 +154,33 @@ func (f *Fetcher) Fetch(ctx context.Context, domain, resource, runDate, panelVer
 	}
 	obs.Outcome, obs.ErrorDetail = classifyNetErr(err)
 	return obs, nil
+}
+
+func (f *Fetcher) targetURLs(domain, path, override string) (httpsURL, httpURL string) {
+	base := strings.TrimRight(f.cfg.Fetcher.ForceBaseURL, "/")
+	if override != "" {
+		if base != "" {
+			u, err := url.Parse(override)
+			p := path
+			if err == nil && u.Path != "" {
+				p = u.Path
+			}
+			return base + p, base + p
+		}
+		httpsURL = override
+		httpURL = override
+		if strings.HasPrefix(override, "https://") {
+			httpURL = "http://" + strings.TrimPrefix(override, "https://")
+		}
+		return httpsURL, httpURL
+	}
+	httpsURL = "https://" + domain + path
+	httpURL = "http://" + domain + path
+	if base != "" {
+		httpsURL = base + path
+		httpURL = base + path
+	}
+	return httpsURL, httpURL
 }
 
 func merge(base store.Observation, over store.Observation) store.Observation {

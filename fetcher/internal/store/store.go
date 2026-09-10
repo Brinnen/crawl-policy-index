@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -111,6 +112,20 @@ func (s *FS) blobPath(sha string) string {
 		sha = sha + "0000"
 	}
 	return filepath.Join(s.root, "blob", sha[0:2], sha[2:4], sha+".gz")
+}
+
+func (s *FS) GetBlob(sha string) ([]byte, error) {
+	f, err := os.Open(s.blobPath(sha))
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	zr, err := gzip.NewReader(f)
+	if err != nil {
+		return nil, err
+	}
+	defer zr.Close()
+	return io.ReadAll(zr)
 }
 
 func (s *FS) WriteObservation(shard int, obs Observation) error {
