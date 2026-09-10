@@ -11,9 +11,13 @@ apt-get install -y nginx
 mkdir -p /var/www/cpi/bot
 cp "$ROOT/site/identity/index.html" "$ROOT/site/identity/style.css" /var/www/cpi/
 cp "$ROOT/site/identity/bot/index.html" /var/www/cpi/bot/
+
+# Ubuntu's default site also listens on port 80 and wins if it stays enabled.
 rm -f /etc/nginx/sites-enabled/default
+rm -f /etc/nginx/sites-enabled/default.conf
 cp "$ROOT/site/identity/nginx.conf" /etc/nginx/sites-available/cpi
 ln -sfn /etc/nginx/sites-available/cpi /etc/nginx/sites-enabled/cpi
+
 nginx -t
 systemctl enable nginx
 systemctl reload nginx
@@ -25,7 +29,15 @@ if command -v ufw >/dev/null 2>&1; then
 fi
 
 echo ""
-echo "Site should be at:"
+echo "Files in place:"
+ls -la /var/www/cpi /var/www/cpi/bot
+echo "Enabled sites:"
+ls -la /etc/nginx/sites-enabled
+echo ""
+echo "Local check (should be HTTP 200 or 301):"
+curl -sI http://127.0.0.1/bot | head -n 5
+echo ""
+echo "Open:"
 echo "  http://178.128.255.20/"
 echo "  http://178.128.255.20/bot"
-echo "If those time out, open DigitalOcean → Networking → Firewalls and allow TCP 80 inbound."
+echo "If the browser still times out, allow TCP 80 in DigitalOcean → Networking → Firewalls."
