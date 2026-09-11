@@ -8,17 +8,20 @@ import sys
 from pathlib import Path
 
 DIR = Path(__file__).resolve().parent
+ROOT = DIR.parents[1]
+sys.path.insert(0, str(ROOT))
+from warehouse.dsn import database_dsn  # noqa: E402
 
 
 def main() -> int:
-    dsn = os.environ.get("DATABASE_DSN", "postgresql://cpi:cpi@localhost:5432/cpi")
+    dsn = os.environ.get("DATABASE_DSN") or database_dsn()
     files = sorted(DIR.glob("*.sql"))
     if not files:
         print("no migrations", file=sys.stderr)
         return 1
     import psycopg
 
-    with psycopg.connect(dsn, autocommit=True) as conn:
+    with psycopg.connect(dsn, autocommit=True, cursor_factory=psycopg.ClientCursor) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """

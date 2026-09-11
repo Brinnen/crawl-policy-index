@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
 # Allow running without installing the package.
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "parser"))
+sys.path.insert(0, str(ROOT))
 
 from cpi_parser.registry import load_agents  # noqa: E402
+from warehouse.dsn import database_dsn  # noqa: E402
 
 
 UPSERT = """
@@ -49,9 +50,11 @@ def rows_from_yaml(path: Path) -> list[dict]:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--registry", default=str(ROOT / "registry" / "agents.yml"))
-    p.add_argument("--dsn", default=os.environ.get("DATABASE_DSN", "postgresql://cpi:cpi@localhost:5432/cpi"))
+    p.add_argument("--dsn", default=None)
     p.add_argument("--dry-run", action="store_true")
     args = p.parse_args(argv)
+    if not args.dsn:
+        args.dsn = database_dsn()
     rows = rows_from_yaml(Path(args.registry))
     if any(r["verified"] for r in rows):
         print("warning: verified=true present; confirm each token against operator docs", file=sys.stderr)
