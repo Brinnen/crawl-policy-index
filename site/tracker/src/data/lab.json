@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-09-11T10:43:00Z",
+  "panel_version": "sites1000",
+  "parse_version": "1.0.0",
+  "view": "v_lab_gptbot_named_grouped",
+  "lab": true,
+  "verified_agents": false,
+  "summary": {
+    "trusted_robots": 572,
+    "gptbot_named_block": 99,
+    "gptbot_named_allow": 19,
+    "gptbot_named_partial": 34,
+    "gptbot_named_block_grouped": 87,
+    "openai_split": 56,
+    "googlebot_named_block": 2,
+    "calendar_observations": 2008
+  },
+  "named": [],
+  "grouped": []
+}

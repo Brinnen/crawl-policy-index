@@ -1,0 +1,95 @@
+---
+import Layout from "../layouts/Layout.astro";
+import NamedChart from "../components/NamedChart.astro";
+import lab from "../data/lab.json";
+
+const s = lab.summary;
+const namedBlocks = lab.named.filter((r) => r.state === "BLOCKED");
+---
+<Layout title="Lab tracker — Crawl Policy Index">
+  <p class="kicker">Panel {lab.panel_version}</p>
+  <h1>Site-declared AI crawl policy</h1>
+  <p>
+    A longitudinal record of which AI crawlers a website allows, blocks, or restricts —
+    as declared in <code>robots.txt</code>. This page is a lab readout, not a published finding.
+  </p>
+
+  <h2>Named GPTBot rules</h2>
+  <p>
+    Among {s.trusted_robots} domains with a trusted robots.txt in this panel,
+    {s.gptbot_named_block} name GPTBot and block it,
+    {s.gptbot_named_allow} name it and allow it,
+    {s.gptbot_named_partial} name it with a partial rule.
+    Collapsing <code>amazon.*</code> country sites, named blocks become {s.gptbot_named_block_grouped}.
+  </p>
+  <NamedChart
+    block={s.gptbot_named_block}
+    allow={s.gptbot_named_allow}
+    partial={s.gptbot_named_partial}
+  />
+  <p class="chart-caption">
+    Counts of domains that <em>named</em> GPTBot. Inherited <code>*</code> rules are not in these bars.
+    Source: <code>{lab.view}</code> over panel {lab.panel_version}, parse {lab.parse_version}.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Claim (lab only)</th>
+        <th class="num">N</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Trusted robots.txt (open wildcard interval)</td>
+        <td class="num">{s.trusted_robots}</td>
+      </tr>
+      <tr>
+        <td>Named GPTBot BLOCK</td>
+        <td class="num">{s.gptbot_named_block}</td>
+      </tr>
+      <tr>
+        <td>Named GPTBot BLOCK, amazon.* collapsed</td>
+        <td class="num">{s.gptbot_named_block_grouped}</td>
+      </tr>
+      <tr>
+        <td>Named GPTBot BLOCK, OpenAI search not blocked</td>
+        <td class="num">{s.openai_split}</td>
+      </tr>
+      <tr>
+        <td>Named Googlebot BLOCK (sanity; should stay near 0)</td>
+        <td class="num">{s.googlebot_named_block}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  {namedBlocks.length > 0 ? (
+    <>
+      <h2>Domains with a named GPTBot block</h2>
+      <p class="source">{namedBlocks.length} rows from the same view. Amazon country sites are listed separately and grouped in the table above.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Domain</th>
+            <th>Group</th>
+          </tr>
+        </thead>
+        <tbody>
+          {namedBlocks.map((row) => (
+            <tr>
+              <td>
+                <a href={`/domain/${row.domain}`}>{row.domain}</a>
+              </td>
+              <td class="mono">{row.group_key}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  ) : (
+    <p class="source">
+      Domain rows are empty in this snapshot. Refresh <code>src/data/lab.json</code> with
+      <code>python3 warehouse/export_lab.py</code> on the droplet after a warehouse run.
+    </p>
+  )}
+</Layout>

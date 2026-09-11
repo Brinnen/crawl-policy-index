@@ -1,0 +1,43 @@
+---
+import "../styles/global.css";
+import lab from "../data/lab.json";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta
+      name="description"
+      content="Lab tracker for site-declared AI crawl policy. Figures are unverified and not for publication."
+    />
+  </head>
+  <body>
+    <p class="banner">
+      Lab output — panel <code>{lab.panel_version}</code>, agents unverified.
+      Do not quote these numbers.
+    </p>
+    <div class="wrap">
+      <header class="site">
+        <strong><a href="/">Crawl Policy Index</a></strong>
+        <nav>
+          <a href="/">Lab</a>
+          <a href="/methodology">Methodology</a>
+          <a href="/data">Data</a>
+          <a href="/bot">Bot policy</a>
+        </nav>
+      </header>
+      <slot />
+      <p class="foot">
+        Source view <code>{lab.view}</code> · parse {lab.parse_version} · exported {lab.generated_at}
+      </p>
+    </div>
+  </body>
+</html>

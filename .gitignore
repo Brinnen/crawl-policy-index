@@ -27,7 +27,9 @@ pgdata/
 minio_data/
 *.log
 
-.idea/
+site/tracker/node_modules/
+site/tracker/dist/
+site/tracker/.astro/
 .vscode/
 *.swp
 .DS_Store

@@ -1,0 +1,24 @@
+---
+interface Props {
+  block: number;
+  allow: number;
+  partial: number;
+}
+const { block, allow, partial } = Astro.props;
+const total = Math.max(block + allow + partial, 1);
+const w = 640;
+const h = 88;
+const gap = 8;
+const bw = (w - gap * 2) / 3;
+function bar(n: number) {
+  return Math.max(4, (n / total) * 56);
+}
+---
+<svg class="chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Named GPTBot states">
+  <rect x="0" y={72 - bar(block)} width={bw} height={bar(block)} fill="var(--bar-block)" />
+  <rect x={bw + gap} y={72 - bar(allow)} width={bw} height={bar(allow)} fill="var(--bar-allow)" />
+  <rect x={(bw + gap) * 2} y={72 - bar(partial)} width={bw} height={bar(partial)} fill="var(--bar-partial)" />
+  <text x={bw / 2} y="86" text-anchor="middle" font-size="14" fill="currentColor">block {block}</text>
+  <text x={bw + gap + bw / 2} y="86" text-anchor="middle" font-size="14" fill="currentColor">allow {allow}</text>
+  <text x={(bw + gap) * 2 + bw / 2} y="86" text-anchor="middle" font-size="14" fill="currentColor">partial {partial}</text>
+</svg>

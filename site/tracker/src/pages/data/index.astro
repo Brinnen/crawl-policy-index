@@ -1,0 +1,21 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import lab from "../../data/lab.json";
+---
+<Layout title="Data — Crawl Policy Index">
+  <p class="kicker">Downloads</p>
+  <h1>Data</h1>
+  <p>
+    Files are generated from warehouse views at export time. They are lab snapshots,
+    not published series. Panel <code>{lab.panel_version}</code>, parse {lab.parse_version}.
+  </p>
+  <ul class="files">
+    <li><a href="/data/lab.json"><code>lab.json</code></a> — full export used to build this site</li>
+    <li><a href="/data/gptbot-named.csv"><code>gptbot-named.csv</code></a> — one row per named GPTBot interval</li>
+    <li><a href="/data/gptbot-named-grouped.csv"><code>gptbot-named-grouped.csv</code></a> — amazon.* collapsed</li>
+  </ul>
+  <p class="source">
+    Refresh on the fetch host with <code>python3 warehouse/export_lab.py</code>, then commit the
+    written files so Vercel rebuilds from the same snapshot.
+  </p>
+</Layout>

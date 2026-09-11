@@ -1,0 +1,37 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import lab from "../../data/lab.json";
+
+export function getStaticPaths() {
+  return lab.named.map((row) => ({
+    params: { domain: row.domain },
+    props: { row },
+  }));
+}
+
+const { row } = Astro.props;
+---
+<Layout title={`${row.domain} — Crawl Policy Index`}>
+  <p class="kicker">Domain</p>
+  <h1>{row.domain}</h1>
+  <table>
+    <tbody>
+      <tr>
+        <td>Named GPTBot state</td>
+        <td class="mono">{row.state}</td>
+      </tr>
+      <tr>
+        <td>Group key</td>
+        <td class="mono">{row.group_key}</td>
+      </tr>
+      <tr>
+        <td>Interval from</td>
+        <td class="mono">{row.valid_from}</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="source">
+    Lab interval from <code>v_lab_gptbot_named</code>. Not an effective-policy row
+    (agents are unverified).
+  </p>
+</Layout>
