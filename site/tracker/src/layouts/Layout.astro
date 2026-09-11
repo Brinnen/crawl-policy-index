@@ -1,43 +1,86 @@
 ---
+import "@fontsource-variable/plus-jakarta-sans";
+import "@fontsource/ibm-plex-mono/400.css";
+import "@fontsource/ibm-plex-mono/500.css";
 import "../styles/global.css";
 import lab from "../data/lab.json";
 
 interface Props {
   title: string;
+  description?: string;
 }
 
-const { title } = Astro.props;
+const {
+  title,
+  description = "The index of site-declared AI crawl policy. Lab preview — figures are not for publication.",
+} = Astro.props;
+
+const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
+const nav = [
+  { href: "/", label: "Overview" },
+  { href: "/methodology", label: "Methodology" },
+  { href: "/data", label: "Data" },
+  { href: "/bot", label: "Bot" },
+];
+
+function isActive(href: string) {
+  if (href === "/") return path === "/";
+  return path === href || path.startsWith(`${href}/`);
+}
+
+const exported = lab.generated_at.replace("T", " ").replace("Z", " UTC");
 ---
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#07080c" />
     <title>{title}</title>
-    <meta
-      name="description"
-      content="Lab tracker for site-declared AI crawl policy. Figures are unverified and not for publication."
-    />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
-    <p class="banner">
-      Lab output — panel <code>{lab.panel_version}</code>, agents unverified.
-      Do not quote these numbers.
-    </p>
-    <div class="wrap">
-      <header class="site">
-        <strong><a href="/">Crawl Policy Index</a></strong>
-        <nav>
-          <a href="/">Lab</a>
-          <a href="/methodology">Methodology</a>
-          <a href="/data">Data</a>
-          <a href="/bot">Bot policy</a>
-        </nav>
+    <div class="shell">
+      <div class="notice">
+        <div class="wrap">
+          Lab preview · panel <code>{lab.panel_version}</code> · agents unverified · not a published series
+        </div>
+      </div>
+      <header class="topbar">
+        <div class="wrap topbar-inner">
+          <a class="brand" href="/">
+            <span class="mark" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path d="M3 3.5h10M3 8h7M3 12.5h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                <circle cx="12.2" cy="8" r="1.6" fill="currentColor"/>
+              </svg>
+            </span>
+            <span class="brand-name">Crawl Policy <span>Index</span></span>
+          </a>
+          <nav class="primary" aria-label="Primary">
+            {nav.map((item) => (
+              <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>
+                {item.label}
+              </a>
+            ))}
+          </nav>
+        </div>
       </header>
-      <slot />
-      <p class="foot">
-        Source view <code>{lab.view}</code> · parse {lab.parse_version} · exported {lab.generated_at}
-      </p>
+      <main>
+        <div class="wrap">
+          <slot />
+        </div>
+      </main>
+      <footer class="site-footer">
+        <div class="wrap">
+          <span>View <code>{lab.view}</code> · parse {lab.parse_version} · exported {exported}</span>
+          <span>Fetch identity stays at crawlpolicyindex.org/bot</span>
+        </div>
+      </footer>
     </div>
   </body>
 </html>

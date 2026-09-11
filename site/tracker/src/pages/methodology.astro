@@ -3,60 +3,63 @@ import Layout from "../layouts/Layout.astro";
 import lab from "../data/lab.json";
 ---
 <Layout title="Methodology — Crawl Policy Index">
-  <p class="kicker">Public contract</p>
-  <h1>Methodology</h1>
-  <p>
-    v1 measures <strong>robots.txt only</strong>. Crawl policy that lives in HTTP 402 responses
-    or signed-agent headers is out of scope and must not be inferred from these numbers.
-  </p>
+  <div class="page-head">
+    <p class="kicker">Contract</p>
+    <h1>How a number is allowed to exist.</h1>
+  </div>
+  <div class="prose">
+    <p>
+      v1 measures <strong>robots.txt only</strong>. Policy that lives in HTTP 402 responses
+      or signed-agent headers is out of scope and must not be inferred from these figures.
+    </p>
 
-  <h2>This page is lab output</h2>
-  <p>
-    Agents in <code>registry/agents.yml</code> currently ship with <code>verified: false</code>.
-    The published resolution function <code>effective_policy(as_of_date)</code> therefore returns
-    no rows. Figures on the lab tracker come from <code>{lab.view}</code> and must not be quoted
-    as “the web.”
-  </p>
+    <h2>This preview is lab output</h2>
+    <p>
+      Agents in <code>registry/agents.yml</code> ship with <code>verified: false</code>.
+      The published function <code>effective_policy(as_of_date)</code> therefore returns no rows.
+      Figures here come from <code>{lab.view}</code> on panel <code>{lab.panel_version}</code>
+      and must not be quoted as “the web.”
+    </p>
 
-  <h2>Panel</h2>
-  <p>
-    Every statistic is of a named, frozen panel version. The current lab panel is
-    <code>{lab.panel_version}</code> (first 1,000 non-infrastructure pay-level domains from a
-    pinned Tranco list). Re-running <code>panel/build_panel.py</code> with the same pinned sources
-    and seed must produce a byte-identical CSV.
-  </p>
+    <h2>Panel</h2>
+    <p>
+      Every statistic is of a named, frozen panel. The current lab panel is
+      <code>{lab.panel_version}</code> — the first 1,000 non-infrastructure pay-level domains
+      from a pinned Tranco list. Re-running <code>panel/build_panel.py</code> with the same
+      sources and seed must produce a byte-identical CSV.
+    </p>
 
-  <h2>Detect gate</h2>
-  <p>
-    Bodies served at <code>/robots.txt</code> are classified before parsing. Rows classified
-    <code>ambiguous</code>, <code>not_robots_html</code>, <code>not_robots_binary</code>, or
-    <code>empty</code> are excluded from policy aggregates.
-  </p>
+    <h2>Detect gate</h2>
+    <p>
+      Bodies at <code>/robots.txt</code> are classified before parsing. Rows classified
+      <code>ambiguous</code>, <code>not_robots_html</code>, <code>not_robots_binary</code>,
+      or <code>empty</code> are excluded from policy aggregates.
+    </p>
 
-  <h2>Effective policy</h2>
-  <p>
-    <code>(domain, agent) → state</code> is resolved only by <code>effective_policy(as_of_date)</code>:
-  </p>
-  <ol>
-    <li>considers only <code>verified AND active</code> agents;</li>
-    <li>uses an explicit <code>policy_interval</code> row when the file named the agent;</li>
-    <li>otherwise uses the <code>*</code> group (<code>WILDCARD</code>) when one exists;</li>
-    <li>otherwise reports <code>ALLOWED</code> / <code>NONE</code>.</li>
-  </ol>
-  <p>
-    A domain with no trustworthy robots.txt is absent from the function, not counted as allowing crawlers.
-    <code>EXPLICIT</code> and <code>WILDCARD</code> blocks are never conflated in a headline.
-  </p>
+    <h2>Effective policy</h2>
+    <p><code>(domain, agent) → state</code> is resolved only by <code>effective_policy(as_of_date)</code>:</p>
+    <ol>
+      <li>verified and active agents only;</li>
+      <li>an explicit interval when the file named the agent;</li>
+      <li>otherwise the <code>*</code> group when one exists;</li>
+      <li>otherwise <code>ALLOWED</code> / <code>NONE</code>.</li>
+    </ol>
+    <p>
+      A domain with no trustworthy robots.txt is absent, not counted as allowing crawlers.
+      Explicit and wildcard blocks are never conflated in a headline.
+    </p>
 
-  <h2>Tokens that are not crawlers</h2>
-  <p>
-    <code>Google-Extended</code>, <code>Applebot-Extended</code>, and other <code>opt_out_token</code>
-    entries are control signals. They are never summed into crawler-blocking rates.
-  </p>
+    <h2>Tokens that are not crawlers</h2>
+    <p>
+      <code>Google-Extended</code>, <code>Applebot-Extended</code>, and other
+      <code>opt_out_token</code> entries are control signals. They are never summed into
+      crawler-blocking rates.
+    </p>
 
-  <h2>Reproducibility</h2>
-  <p>
-    Raw bytes are stored once per SHA-256 and never discarded. A parser bug is fixed by bumping
-    <code>parse_version</code> and re-parsing blobs. Prior parse rows are kept.
-  </p>
+    <h2>Reproducibility</h2>
+    <p>
+      Raw bytes are stored once per SHA-256 and never discarded. A parser bug is fixed by
+      bumping <code>parse_version</code> and re-parsing. Prior parse rows are kept.
+    </p>
+  </div>
 </Layout>

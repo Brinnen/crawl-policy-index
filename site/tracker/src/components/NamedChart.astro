@@ -5,20 +5,46 @@ interface Props {
   partial: number;
 }
 const { block, allow, partial } = Astro.props;
-const total = Math.max(block + allow + partial, 1);
-const w = 640;
-const h = 88;
-const gap = 8;
-const bw = (w - gap * 2) / 3;
-function bar(n: number) {
-  return Math.max(4, (n / total) * 56);
+const realTotal = block + allow + partial;
+const total = Math.max(realTotal, 1);
+const w = 920;
+const h = 56;
+const y = 14;
+const barH = 28;
+const segs = [
+  { n: block, color: "var(--block)" },
+  { n: allow, color: "var(--allow)" },
+  { n: partial, color: "var(--partial)" },
+];
+let cursor = 0;
+const rects = segs.map((seg) => {
+  const width = realTotal === 0 ? 0 : (seg.n / total) * w;
+  const rect = { x: cursor, width, color: seg.color, n: seg.n };
+  cursor += width;
+  return rect;
+});
+function pct(n: number) {
+  if (realTotal === 0) return "0%";
+  return `${Math.round((n / realTotal) * 100)}%`;
 }
 ---
-<svg class="chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Named GPTBot states">
-  <rect x="0" y={72 - bar(block)} width={bw} height={bar(block)} fill="var(--bar-block)" />
-  <rect x={bw + gap} y={72 - bar(allow)} width={bw} height={bar(allow)} fill="var(--bar-allow)" />
-  <rect x={(bw + gap) * 2} y={72 - bar(partial)} width={bw} height={bar(partial)} fill="var(--bar-partial)" />
-  <text x={bw / 2} y="86" text-anchor="middle" font-size="14" fill="currentColor">block {block}</text>
-  <text x={bw + gap + bw / 2} y="86" text-anchor="middle" font-size="14" fill="currentColor">allow {allow}</text>
-  <text x={(bw + gap) * 2 + bw / 2} y="86" text-anchor="middle" font-size="14" fill="currentColor">partial {partial}</text>
+<svg class="chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Named GPTBot states as a stacked bar">
+  <defs>
+    <clipPath id="cpi-bar">
+      <rect x="0" y={y} width={w} height={barH} rx="14" />
+    </clipPath>
+  </defs>
+  <rect x="0" y={y} width={w} height={barH} rx="14" fill="var(--line)" />
+  <g clip-path="url(#cpi-bar)">
+    {rects.map((rect) =>
+      rect.width > 0 ? (
+        <rect x={rect.x} y={y} width={rect.width} height={barH} fill={rect.color} />
+      ) : null,
+    )}
+  </g>
 </svg>
+<div class="legend">
+  <span><i class="swatch" style="background:var(--block)"></i>Block {block} · {pct(block)}</span>
+  <span><i class="swatch" style="background:var(--allow)"></i>Allow {allow} · {pct(allow)}</span>
+  <span><i class="swatch" style="background:var(--partial)"></i>Partial {partial} · {pct(partial)}</span>
+</div>

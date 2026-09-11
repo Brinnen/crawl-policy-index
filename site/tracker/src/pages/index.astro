@@ -1,73 +1,92 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import NamedChart from "../components/NamedChart.astro";
+import Stat from "../components/Stat.astro";
 import lab from "../data/lab.json";
 
 const s = lab.summary;
 const namedBlocks = lab.named.filter((r) => r.state === "BLOCKED");
+const n = (value: number) => new Intl.NumberFormat("en-US").format(value);
 ---
-<Layout title="Lab tracker — Crawl Policy Index">
-  <p class="kicker">Panel {lab.panel_version}</p>
-  <h1>Site-declared AI crawl policy</h1>
-  <p>
-    A longitudinal record of which AI crawlers a website allows, blocks, or restricts —
-    as declared in <code>robots.txt</code>. This page is a lab readout, not a published finding.
-  </p>
+<Layout title="Crawl Policy Index">
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="pill"><i></i> Live fetch · lab panel</p>
+      <h1>The market for permission to crawl.</h1>
+      <p class="lede">
+        Daily, site-declared AI crawl policy — who each domain allows, blocks, or splits
+        between training and search. Built as a longitudinal index, not a traffic panel.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="/data">Get the lab snapshot</a>
+        <a class="btn btn-ghost" href="/methodology">Read the contract</a>
+      </div>
+    </div>
+    <aside class="instrument">
+      <p class="instrument-label">Named GPTBot posture</p>
+      <p class="instrument-sub">Explicit rules only. Wildcard <code>*</code> inheritance is excluded.</p>
+      <NamedChart
+        block={s.gptbot_named_block}
+        allow={s.gptbot_named_allow}
+        partial={s.gptbot_named_partial}
+      />
+    </aside>
+  </section>
 
-  <h2>Named GPTBot rules</h2>
-  <p>
-    Among {s.trusted_robots} domains with a trusted robots.txt in this panel,
-    {s.gptbot_named_block} name GPTBot and block it,
-    {s.gptbot_named_allow} name it and allow it,
-    {s.gptbot_named_partial} name it with a partial rule.
-    Collapsing <code>amazon.*</code> country sites, named blocks become {s.gptbot_named_block_grouped}.
-  </p>
-  <NamedChart
-    block={s.gptbot_named_block}
-    allow={s.gptbot_named_allow}
-    partial={s.gptbot_named_partial}
-  />
-  <p class="chart-caption">
-    Counts of domains that <em>named</em> GPTBot. Inherited <code>*</code> rules are not in these bars.
-    Source: <code>{lab.view}</code> over panel {lab.panel_version}, parse {lab.parse_version}.
-  </p>
+  <section class="stats">
+    <Stat label="Trusted robots.txt" value={n(s.trusted_robots)} hint="Open wildcard intervals" />
+    <Stat label="Named GPTBot block" value={n(s.gptbot_named_block)} hint="Explicit rules only" />
+    <Stat label="After amazon.*" value={n(s.gptbot_named_block_grouped)} hint="Country sites collapsed" />
+    <Stat label="Training / search split" value={n(s.openai_split)} hint="Block GPTBot, search not blocked" />
+  </section>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Claim (lab only)</th>
-        <th class="num">N</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Trusted robots.txt (open wildcard interval)</td>
-        <td class="num">{s.trusted_robots}</td>
-      </tr>
-      <tr>
-        <td>Named GPTBot BLOCK</td>
-        <td class="num">{s.gptbot_named_block}</td>
-      </tr>
-      <tr>
-        <td>Named GPTBot BLOCK, amazon.* collapsed</td>
-        <td class="num">{s.gptbot_named_block_grouped}</td>
-      </tr>
-      <tr>
-        <td>Named GPTBot BLOCK, OpenAI search not blocked</td>
-        <td class="num">{s.openai_split}</td>
-      </tr>
-      <tr>
-        <td>Named Googlebot BLOCK (sanity; should stay near 0)</td>
-        <td class="num">{s.googlebot_named_block}</td>
-      </tr>
-    </tbody>
-  </table>
+  <section class="grid-3">
+    <article class="tile">
+      <h3>Publishers</h3>
+      <p>See whether peers named training crawlers, search crawlers, or both — and when that changed.</p>
+    </article>
+    <article class="tile">
+      <h3>Model labs</h3>
+      <p>A frozen panel and a parse you can replay. Not a scrape of page text. Not a traffic estimate.</p>
+    </article>
+    <article class="tile">
+      <h3>Counsel &amp; policy</h3>
+      <p>Every figure traces to a SQL view over one panel version and one parse version. Or it does not ship.</p>
+    </article>
+  </section>
+
+  <section class="panel">
+    <h2>Lab readout</h2>
+    <p class="sub">Same warehouse view as the chart. Sanity: named Googlebot blocks should stay near zero.</p>
+    <table class="data">
+      <thead>
+        <tr>
+          <th>Measure</th>
+          <th class="num">N</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Calendar robots observations</td>
+          <td class="num">{n(s.calendar_observations)}</td>
+        </tr>
+        <tr>
+          <td>Named GPTBot allow / partial</td>
+          <td class="num">{n(s.gptbot_named_allow)} / {n(s.gptbot_named_partial)}</td>
+        </tr>
+        <tr>
+          <td>Named Googlebot block</td>
+          <td class="num">{n(s.googlebot_named_block)}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
 
   {namedBlocks.length > 0 ? (
-    <>
-      <h2>Domains with a named GPTBot block</h2>
-      <p class="source">{namedBlocks.length} rows from the same view. Amazon country sites are listed separately and grouped in the table above.</p>
-      <table>
+    <section class="panel">
+      <h2>Named GPTBot blocks</h2>
+      <p class="sub">{namedBlocks.length} domains. Amazon country sites listed separately; grouped count is in the hero stats.</p>
+      <table class="data">
         <thead>
           <tr>
             <th>Domain</th>
@@ -77,19 +96,17 @@ const namedBlocks = lab.named.filter((r) => r.state === "BLOCKED");
         <tbody>
           {namedBlocks.map((row) => (
             <tr>
-              <td>
-                <a href={`/domain/${row.domain}`}>{row.domain}</a>
-              </td>
+              <td><a href={`/domain/${row.domain}`}>{row.domain}</a></td>
               <td class="mono">{row.group_key}</td>
             </tr>
           ))}
         </tbody>
       </table>
-    </>
+    </section>
   ) : (
-    <p class="source">
-      Domain rows are empty in this snapshot. Refresh <code>src/data/lab.json</code> with
-      <code>python3 warehouse/export_lab.py</code> on the droplet after a warehouse run.
-    </p>
+    <section class="empty">
+      <h2>Domain directory next</h2>
+      <p>Named-domain rows appear after the next warehouse export is committed. Snapshot totals above are already live from <code>{lab.view}</code>.</p>
+    </section>
   )}
 </Layout>

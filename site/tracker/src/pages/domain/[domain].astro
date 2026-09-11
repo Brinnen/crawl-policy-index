@@ -12,26 +12,27 @@ export function getStaticPaths() {
 const { row } = Astro.props;
 ---
 <Layout title={`${row.domain} — Crawl Policy Index`}>
-  <p class="kicker">Domain</p>
-  <h1>{row.domain}</h1>
-  <table>
-    <tbody>
-      <tr>
-        <td>Named GPTBot state</td>
-        <td class="mono">{row.state}</td>
-      </tr>
-      <tr>
-        <td>Group key</td>
-        <td class="mono">{row.group_key}</td>
-      </tr>
-      <tr>
-        <td>Interval from</td>
-        <td class="mono">{row.valid_from}</td>
-      </tr>
-    </tbody>
-  </table>
-  <p class="source">
-    Lab interval from <code>v_lab_gptbot_named</code>. Not an effective-policy row
-    (agents are unverified).
-  </p>
+  <div class="page-head">
+    <p class="kicker">Domain</p>
+    <h1>{row.domain}</h1>
+  </div>
+  <section class="panel">
+    <table class="data">
+      <tbody>
+        <tr>
+          <td>Named GPTBot state</td>
+          <td class="mono">{row.state}</td>
+        </tr>
+        <tr>
+          <td>Group key</td>
+          <td class="mono">{row.group_key}</td>
+        </tr>
+        <tr>
+          <td>Interval from</td>
+          <td class="mono">{row.valid_from}</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="sub">Lab interval from <code>v_lab_gptbot_named</code>. Not an effective-policy row.</p>
+  </section>
 </Layout>

@@ -3,19 +3,35 @@ import Layout from "../../layouts/Layout.astro";
 import lab from "../../data/lab.json";
 ---
 <Layout title="Data — Crawl Policy Index">
-  <p class="kicker">Downloads</p>
-  <h1>Data</h1>
-  <p>
-    Files are generated from warehouse views at export time. They are lab snapshots,
-    not published series. Panel <code>{lab.panel_version}</code>, parse {lab.parse_version}.
+  <div class="page-head">
+    <p class="kicker">Exports</p>
+    <h1>Take the snapshot, not a screenshot.</h1>
+  </div>
+  <p class="lede">
+    Files are generated from warehouse views at export time. Lab snapshots, not a published series.
+    Panel <code>{lab.panel_version}</code>, parse {lab.parse_version}.
   </p>
-  <ul class="files">
-    <li><a href="/data/lab.json"><code>lab.json</code></a> — full export used to build this site</li>
-    <li><a href="/data/gptbot-named.csv"><code>gptbot-named.csv</code></a> — one row per named GPTBot interval</li>
-    <li><a href="/data/gptbot-named-grouped.csv"><code>gptbot-named-grouped.csv</code></a> — amazon.* collapsed</li>
-  </ul>
-  <p class="source">
-    Refresh on the fetch host with <code>python3 warehouse/export_lab.py</code>, then commit the
-    written files so Vercel rebuilds from the same snapshot.
-  </p>
+  <div class="downloads">
+    <a class="download" href="/data/lab.json">
+      <span class="download-copy">
+        <strong>lab.json</strong>
+        <span class="meta">Full export the site is built from</span>
+      </span>
+      <span class="kind">JSON</span>
+    </a>
+    <a class="download" href="/data/gptbot-named.csv">
+      <span class="download-copy">
+        <strong>gptbot-named.csv</strong>
+        <span class="meta">One row per named GPTBot interval</span>
+      </span>
+      <span class="kind">CSV</span>
+    </a>
+    <a class="download" href="/data/gptbot-named-grouped.csv">
+      <span class="download-copy">
+        <strong>gptbot-named-grouped.csv</strong>
+        <span class="meta">amazon.* country sites collapsed</span>
+      </span>
+      <span class="kind">CSV</span>
+    </a>
+  </div>
 </Layout>

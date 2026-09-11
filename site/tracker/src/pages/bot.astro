@@ -2,34 +2,44 @@
 import Layout from "../layouts/Layout.astro";
 ---
 <Layout title="Bot policy — Crawl Policy Index">
-  <p class="kicker"><a href="/">Crawl Policy Index</a></p>
-  <h1>Bot policy</h1>
-  <p>This page is the contact URL in our User-Agent. If you operate a site we fetched, this is how to identify us and how to ask us to stop.</p>
+  <div class="page-head">
+    <p class="kicker">Operator contact</p>
+    <h1>We fetch three files. Then we stop.</h1>
+  </div>
+  <div class="prose">
+    <p>
+      This page is the contact URL in our User-Agent. If you operate a site we fetched,
+      this is how to identify us and how to ask us to stop.
+    </p>
 
-  <h2>Who we are</h2>
-  <p>Crawl Policy Index records <strong>site-declared</strong> AI crawl policy. We are not a search engine, we do not train models, and we do not follow links into page content.</p>
+    <h2>Who we are</h2>
+    <p>
+      Crawl Policy Index records <strong>site-declared</strong> AI crawl policy.
+      We are not a search engine, we do not train models, and we do not follow links into page content.
+    </p>
 
-  <h2>What we fetch</h2>
-  <p>At most three URLs per domain, once per daily run:</p>
-  <ul>
-    <li><code>/robots.txt</code> (primary)</li>
-    <li><code>/llms.txt</code> (often absent; a 404 is recorded as a fact)</li>
-    <li><code>/sitemap.xml</code> (top-level file only; we do not fetch child sitemaps or page URLs)</li>
-  </ul>
-  <p>Raw bytes are stored to reproduce parses. We publish derived facts and short excerpts, not wholesale copies of your files.</p>
+    <h2>What we fetch</h2>
+    <p>At most three URLs per domain, once per daily run:</p>
+    <ul>
+      <li><code>/robots.txt</code> (primary)</li>
+      <li><code>/llms.txt</code> (often absent; a 404 is recorded as a fact)</li>
+      <li><code>/sitemap.xml</code> (top-level file only; we do not fetch child sitemaps or page URLs)</li>
+    </ul>
+    <p>Raw bytes are stored to reproduce parses. We publish derived facts and short excerpts, not wholesale copies of your files.</p>
 
-  <h2>How often, and from where</h2>
-  <ul>
-    <li>At most one successful fetch per resource per domain per day</li>
-    <li>One in-flight request per host</li>
-    <li>User-Agent: <code>CrawlPolicyIndex/1.0 (+https://crawlpolicyindex.org/bot)</code></li>
-    <li>Current fetch server IPv4: <code>178.128.255.20</code></li>
-  </ul>
+    <h2>How often, and from where</h2>
+    <ul>
+      <li>At most one successful fetch per resource per domain per day</li>
+      <li>One in-flight request per host</li>
+      <li>User-Agent: <code>CrawlPolicyIndex/1.0 (+https://crawlpolicyindex.org/bot)</code></li>
+      <li>Current fetch server IPv4: <code>178.128.255.20</code></li>
+    </ul>
 
-  <h2>How to be excluded</h2>
-  <p>
-    Email <a href="mailto:exclude@crawlpolicyindex.org">exclude@crawlpolicyindex.org</a> with the registrable domain.
-    We honour exclusion within 24 hours and keep an auditable log. Historical blobs already stored are not used to continue fetching you; new panel versions omit the domain.
-  </p>
-  <p class="foot">We do not collect personal data. If any appears in a fetched file, it is purged, not analysed.</p>
+    <h2>How to be excluded</h2>
+    <p>
+      Email <a href="mailto:exclude@crawlpolicyindex.org">exclude@crawlpolicyindex.org</a> with the registrable domain.
+      We honour exclusion within 24 hours and keep an auditable log. Historical blobs already stored are not used to continue fetching you; new panel versions omit the domain.
+    </p>
+    <p>We do not collect personal data. If any appears in a fetched file, it is purged, not analysed.</p>
+  </div>
 </Layout>
