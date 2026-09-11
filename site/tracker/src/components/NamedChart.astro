@@ -34,6 +34,7 @@ function pct(n: number) {
   return `${Math.round((n / realTotal) * 100)}%`;
 }
 ---
+<div id="cpi-gptbot-chart">
 <svg class="chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="How test sites treat GPTBot: named block, block-all-bots, named allow, named mixed">
   <defs>
     <clipPath id="cpi-bar">
@@ -58,4 +59,5 @@ function pct(n: number) {
   )}
   <span><i class="swatch" style="background:var(--allow)"></i>Named GPTBot, allowed {allow} · {pct(allow)}</span>
   <span><i class="swatch" style="background:var(--partial)"></i>Named GPTBot, mixed {partial} · {pct(partial)}</span>
+</div>
 </div>

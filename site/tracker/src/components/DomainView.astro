@@ -1,0 +1,59 @@
+---
+import { purposeLabel, STATE_LABELS } from "../lib/labels";
+
+export type DomainRow = {
+  domain: string;
+  state: string;
+  valid_from?: string;
+  agent_slug?: string;
+  token?: string;
+  agent?: string;
+  operator?: string;
+  purpose?: string;
+  kind?: string;
+  group_key?: string;
+};
+
+interface Props {
+  domain: string;
+  rows: DomainRow[];
+}
+
+const { domain, rows } = Astro.props;
+---
+<div class="page-head">
+  <p class="kicker">Website</p>
+  <h1 data-domain-heading>{domain || "Website"}</h1>
+</div>
+<section class="panel" data-domain-page={domain}>
+  <h2>Bots this site named</h2>
+  <p class="sub">Named bots this website wrote down, plus a blanket “block all bots” rule if it has one.</p>
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Bot</th>
+        <th>Company</th>
+        <th>What it’s for</th>
+        <th>What they said</th>
+        <th>Since</th>
+      </tr>
+    </thead>
+    <tbody data-domain-rows>
+      {rows.length === 0 ? (
+        <tr>
+          <td colspan="5" class="empty-cell">Loading this website…</td>
+        </tr>
+      ) : (
+        rows.map((row) => (
+          <tr>
+            <td>{row.token ?? row.agent ?? "GPTBot"}</td>
+            <td>{row.operator ?? "—"}</td>
+            <td>{purposeLabel(row.purpose)}</td>
+            <td>{row.kind === "blanket" || row.purpose === "blanket" ? "Block all bots" : (STATE_LABELS[row.state] ?? row.state)}</td>
+            <td>{row.valid_from}</td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+</section>

@@ -82,10 +82,14 @@ const exportedDate = new Date(lab.generated_at).toLocaleDateString("en-GB", {
       </main>
       <footer class="site-footer">
         <div class="wrap">
-          <span>Snapshot {exportedDate} · 1,000-site test · not for publication</span>
+          <span>Snapshot <span data-exported-date>{exportedDate}</span> · 1,000-site test · not for publication</span>
           <span><a href="/bot">If we visited your website</a></span>
         </div>
       </footer>
     </div>
+    <script>
+      import { SNAPSHOT_URL, bootLiveLab } from "../scripts/live-lab";
+      bootLiveLab(SNAPSHOT_URL);
+    </script>
   </body>
 </html>

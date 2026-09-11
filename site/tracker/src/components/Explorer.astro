@@ -146,9 +146,9 @@ const payload = JSON.stringify({
   const raw = document.getElementById("cpi-explorer-data");
   if (root && raw) {
     const data = JSON.parse(raw.textContent || '{"agents":[],"named":[],"blanket":[],"purposeLabels":{},"stateLabels":{}}');
-    const agents = data.agents || [];
-    const named = data.named || [];
-    const blanket = data.blanket || [];
+    let agents = data.agents || [];
+    let named = data.named || [];
+    let blanket = data.blanket || [];
     const PURPOSE = data.purposeLabels || {};
     const STATE = data.stateLabels || {};
     const $ = (sel: string) => root.querySelector(sel) as HTMLInputElement | HTMLSelectElement;
@@ -301,10 +301,64 @@ const payload = JSON.stringify({
         )
         .join("");
     }
+    function uniqueSorted(values: string[]) {
+      return [...new Set(values.filter(Boolean))].sort();
+    }
+    function fillSelect(sel: HTMLSelectElement, values: { value: string; label: string }[], blank: string) {
+      const current = sel.value;
+      sel.innerHTML =
+        `<option value="">${esc(blank)}</option>` +
+        values.map((v) => `<option value="${esc(v.value)}">${esc(v.label)}</option>`).join("");
+      if ([...sel.options].some((o) => o.value === current)) sel.value = current;
+    }
+    function syncFilters() {
+      const opSel = $('[data-filter="agent-operator"]') as HTMLSelectElement;
+      const purposeSel = $('[data-filter="agent-purpose"]') as HTMLSelectElement;
+      const dPurposeSel = $('[data-filter="domain-purpose"]') as HTMLSelectElement;
+      const agentSel = $('[data-filter="domain-agent"]') as HTMLSelectElement;
+      fillSelect(
+        opSel,
+        uniqueSorted(agents.map((a: { operator: string }) => a.operator)).map((op) => ({ value: op, label: op })),
+        "All companies",
+      );
+      const purposes = uniqueSorted(agents.map((a: { purpose: string }) => a.purpose));
+      fillSelect(
+        purposeSel,
+        purposes.map((p) => ({ value: p, label: purpose(p) })),
+        "All uses",
+      );
+      fillSelect(
+        dPurposeSel,
+        purposes.map((p) => ({ value: p, label: purpose(p) })),
+        "All uses",
+      );
+      const tokens = [...agents].sort((a: { token: string }, b: { token: string }) => a.token.localeCompare(b.token));
+      fillSelect(
+        agentSel,
+        tokens.map((a: { slug: string; token: string }) => ({ value: a.slug, label: a.token })),
+        "All bots",
+      );
+    }
     function render() {
       renderAgents();
       renderDomains();
       writeUrl();
+    }
+    window.addEventListener("cpi-lab", (event) => {
+      const lab = (event as CustomEvent).detail;
+      if (!lab) return;
+      agents = lab.by_agent || agents;
+      named = lab.named || named;
+      blanket = lab.blanket || blanket;
+      syncFilters();
+      render();
+    });
+    if (window.__CPI_LAB) {
+      const live = window.__CPI_LAB;
+      agents = live.by_agent || agents;
+      named = live.named || named;
+      blanket = live.blanket || blanket;
+      syncFilters();
     }
     applyUrl();
     root.querySelectorAll("[data-filter]").forEach((el) => {

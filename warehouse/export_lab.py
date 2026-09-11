@@ -1,13 +1,14 @@
 """Export lab warehouse views to the Astro tracker data file.
 
-Run on the droplet after warehouse-once.sh:
+Called by scripts/daily-run.sh after warehouse-once.sh. Writes:
 
-    python3 warehouse/export_lab.py
+    site/tracker/src/data/lab.json
 
-Then copy site/tracker/src/data/lab.json into git so Vercel rebuilds from the snapshot.
-Vercel cannot reach Postgres on the droplet.
+scripts/publish-lab.sh copies that file to /var/www/cpi/snapshot/lab.json
+(the live numbers). The tracker fetches that URL in the browser.
 
-The tracker does not publish this file as a download. It is a build input.
+The tracker does not publish this file as a download. It is a build input
+and a snapshot payload.
 """
 
 from __future__ import annotations

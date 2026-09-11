@@ -6,5 +6,8 @@
     { "source": "/data/lab.json", "destination": "/data", "permanent": true },
     { "source": "/data/gptbot-named.csv", "destination": "/data", "permanent": true },
     { "source": "/data/gptbot-named-grouped.csv", "destination": "/data", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/domain/:domain", "destination": "/domain/index.html" }
   ]
 }

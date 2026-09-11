@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Serve the identity site (homepage + /bot). Run from anywhere, as root:
+# Serve the identity site (homepage + /bot) over HTTP, then HTTPS if possible.
 #   bash scripts/setup-web.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+DOMAIN="${CPI_DOMAIN:-crawlpolicyindex.org}"
+EMAIL="${CPI_CERT_EMAIL:-exclude@${DOMAIN}}"
 export DEBIAN_FRONTEND=noninteractive
 
 if [[ ! -f "$ROOT/site/identity/index.html" ]]; then
@@ -13,15 +15,19 @@ if [[ ! -f "$ROOT/site/identity/index.html" ]]; then
 fi
 
 apt-get update -y
-apt-get install -y nginx
+apt-get install -y nginx certbot python3-certbot-nginx
 
-mkdir -p /var/www/cpi/bot
+mkdir -p /var/www/cpi/bot /var/www/cpi/snapshot /etc/nginx/snippets
 cp "$ROOT/site/identity/index.html" "$ROOT/site/identity/style.css" /var/www/cpi/
 cp "$ROOT/site/identity/bot/index.html" /var/www/cpi/bot/
+install -m 644 "$ROOT/site/identity/nginx-snapshot.conf" /etc/nginx/snippets/cpi-snapshot.conf
 
 rm -f /etc/nginx/sites-enabled/default
 rm -f /etc/nginx/sites-enabled/default.conf
-cp "$ROOT/site/identity/nginx.conf" /etc/nginx/sites-available/cpi
+
+if [[ ! -d "/etc/letsencrypt/live/${DOMAIN}" ]]; then
+  cp "$ROOT/site/identity/nginx.conf" /etc/nginx/sites-available/cpi
+fi
 ln -sfn /etc/nginx/sites-available/cpi /etc/nginx/sites-enabled/cpi
 
 nginx -t
@@ -31,20 +37,23 @@ systemctl reload nginx
 if command -v ufw >/dev/null 2>&1; then
   ufw allow OpenSSH
   ufw allow 80/tcp
+  ufw allow 443/tcp
   ufw --force enable || true
 fi
 
-echo ""
-echo "Files in place:"
-ls -la /var/www/cpi /var/www/cpi/bot
-echo "Enabled sites:"
-ls -la /etc/nginx/sites-enabled
-echo ""
-echo "Local check (should be HTTP 200 or 301):"
-curl -sI http://127.0.0.1/bot | head -n 5
-curl -sI http://127.0.0.1/bot/ | head -n 5
+if [[ ! -d "/etc/letsencrypt/live/${DOMAIN}" ]]; then
+  echo "Requesting Let's Encrypt certificate for ${DOMAIN} and www.${DOMAIN}..."
+  certbot --nginx \
+    -d "$DOMAIN" \
+    -d "www.${DOMAIN}" \
+    --redirect \
+    --non-interactive \
+    --agree-tos \
+    --email "$EMAIL"
+fi
+
 echo ""
 echo "Open:"
-echo "  http://178.128.255.20/"
-echo "  http://178.128.255.20/bot/"
-echo "If the browser still times out, allow TCP 80 in DigitalOcean → Networking → Firewalls."
+echo "  https://${DOMAIN}/"
+echo "  https://${DOMAIN}/bot/"
+echo "If HTTPS times out, allow TCP 443 in DigitalOcean → Networking → Firewalls."

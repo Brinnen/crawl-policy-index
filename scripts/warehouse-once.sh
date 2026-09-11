@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Load the droplet store into Postgres and derive lab policy intervals.
+# Called by scripts/daily-run.sh. Manual:
 #   bash scripts/warehouse-once.sh
 set -euo pipefail
 

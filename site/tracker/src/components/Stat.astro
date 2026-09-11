@@ -3,11 +3,12 @@ interface Props {
   label: string;
   value: string | number;
   hint: string;
+  stat?: string;
 }
-const { label, value, hint } = Astro.props;
+const { label, value, hint, stat } = Astro.props;
 ---
 <article class="stat">
   <span class="label">{label}</span>
-  <span class="value">{value}</span>
+  <span class="value" data-stat={stat}>{value}</span>
   <p class="hint">{hint}</p>
 </article>

@@ -1,6 +1,6 @@
 # Lab tracker (Astro)
 
-Static site. It reads `src/data/lab.json` at build time. It does not connect to the droplet.
+Static site. It reads `src/data/lab.json` at build time, then refreshes numbers in the browser from `https://crawlpolicyindex.org/snapshot/lab.json`. It does not connect to Postgres.
 
 The public site is an explorer, not a data dump. Do not add download routes for JSON or CSV.
 
@@ -14,10 +14,12 @@ Do not add environment variables. Postgres stays on the fetch host.
 
 ## Refresh numbers
 
-On the droplet, after `bash scripts/warehouse-once.sh`:
+On the droplet, once:
 
 ```bash
-python3 warehouse/export_lab.py
+cd /root/crawl-policy-index && git pull && bash scripts/setup-daily.sh
 ```
 
-Commit `site/tracker/src/data/lab.json` so Vercel rebuilds from that snapshot.
+That installs a 02:00 UTC job: fetch → warehouse → export → publish the snapshot. Overview and Explore update from that URL. No manual export or commit.
+
+Optional: put `GITHUB_TOKEN` in `/root/crawl-policy-index/.env` so the job also commits `lab.json` and Vercel rebuilds.
