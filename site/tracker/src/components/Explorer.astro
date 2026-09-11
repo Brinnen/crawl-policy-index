@@ -1,0 +1,306 @@
+---
+interface AgentRow {
+  slug: string;
+  token: string;
+  agent: string;
+  operator: string;
+  purpose: string;
+  named_block: number | null;
+  named_allow: number | null;
+  named_partial: number | null;
+}
+
+interface NamedRow {
+  domain: string;
+  state: string;
+  valid_from?: string;
+  agent_slug?: string;
+  token?: string;
+  agent?: string;
+  operator?: string;
+  purpose?: string;
+  group_key: string;
+}
+
+interface Props {
+  agents: AgentRow[];
+  named: NamedRow[];
+}
+
+const { agents, named } = Astro.props;
+
+const operators = [...new Set(agents.map((a) => a.operator))].sort();
+const purposes = [...new Set(agents.map((a) => a.purpose))].sort();
+const tokens = [...agents].sort((a, b) => a.token.localeCompare(b.token));
+
+const payload = JSON.stringify({ agents, named }).replaceAll("<", "\\u003c");
+---
+<div class="explorer" id="cpi-explorer">
+  <section class="panel">
+    <h2>Named rules by agent</h2>
+    <p class="sub">Explicit robots.txt tokens only. Opt-out tokens are not crawlers — filter them out if you are counting bots.</p>
+    <div class="filters filters-3">
+      <label class="field">
+        <span>Operator</span>
+        <select data-filter="agent-operator">
+          <option value="">All operators</option>
+          {operators.map((op) => <option value={op}>{op}</option>)}
+        </select>
+      </label>
+      <label class="field">
+        <span>Purpose</span>
+        <select data-filter="agent-purpose">
+          <option value="">All purposes</option>
+          {purposes.map((p) => <option value={p}>{p.replaceAll("_", " ")}</option>)}
+        </select>
+      </label>
+      <label class="field">
+        <span>Search</span>
+        <input type="search" data-filter="agent-q" placeholder="GPTBot, ClaudeBot…" autocomplete="off" />
+      </label>
+    </div>
+    <p class="explorer-meta"><span data-agent-count></span></p>
+    <div class="table-scroll">
+      <table class="data" data-agent-table>
+        <thead>
+          <tr>
+            <th>Agent</th>
+            <th>Operator</th>
+            <th>Purpose</th>
+            <th class="num">Block</th>
+            <th class="num">Allow</th>
+            <th class="num">Partial</th>
+          </tr>
+        </thead>
+        <tbody data-agent-body></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Named rules by domain</h2>
+    <p class="sub">One row per domain that named the token. Inherited <code>*</code> rules are not listed.</p>
+    <div class="filters">
+      <label class="field">
+        <span>Domain</span>
+        <input type="search" data-filter="domain-q" placeholder="nytimes.com" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Agent</span>
+        <select data-filter="domain-agent">
+          <option value="">All agents</option>
+          {tokens.map((a) => <option value={a.slug}>{a.token}</option>)}
+        </select>
+      </label>
+      <label class="field">
+        <span>State</span>
+        <select data-filter="domain-state">
+          <option value="">All states</option>
+          <option value="BLOCKED">Block</option>
+          <option value="ALLOWED">Allow</option>
+          <option value="PARTIAL">Partial</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Purpose</span>
+        <select data-filter="domain-purpose">
+          <option value="">All purposes</option>
+          {purposes.map((p) => <option value={p}>{p.replaceAll("_", " ")}</option>)}
+        </select>
+      </label>
+    </div>
+    <label class="check">
+      <input type="checkbox" data-filter="collapse-amazon" />
+      Collapse amazon.* country sites
+    </label>
+    <p class="explorer-meta"><span data-domain-count></span></p>
+    <div class="table-scroll">
+      <table class="data" data-domain-table>
+        <thead>
+          <tr>
+            <th>Domain</th>
+            <th>Agent</th>
+            <th>Operator</th>
+            <th>Purpose</th>
+            <th>State</th>
+          </tr>
+        </thead>
+        <tbody data-domain-body></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+<script id="cpi-explorer-data" type="application/json" set:html={payload}></script>
+<script>
+  const PURPOSE: Record<string, string> = {
+    training: "Training",
+    search_index: "Search",
+    user_fetch: "User fetch",
+    opt_out_token: "Opt-out token",
+    agentic: "Agentic",
+    unknown: "Unknown",
+  };
+  const STATE: Record<string, string> = {
+    BLOCKED: "Block",
+    ALLOWED: "Allow",
+    PARTIAL: "Partial",
+  };
+
+  const root = document.getElementById("cpi-explorer");
+  const raw = document.getElementById("cpi-explorer-data");
+  if (root && raw) {
+    const data = JSON.parse(raw.textContent || '{"agents":[],"named":[]}');
+    const agents = data.agents || [];
+    const named = data.named || [];
+    const $ = (sel: string) => root.querySelector(sel) as HTMLInputElement | HTMLSelectElement;
+    const agentBody = root.querySelector("[data-agent-body]") as HTMLElement;
+    const domainBody = root.querySelector("[data-domain-body]") as HTMLElement;
+    const agentCount = root.querySelector("[data-agent-count]") as HTMLElement;
+    const domainCount = root.querySelector("[data-domain-count]") as HTMLElement;
+
+    function num(n: number | null | undefined) {
+      if (n === null || n === undefined) return "—";
+      return new Intl.NumberFormat("en-US").format(n);
+    }
+    function esc(value: string) {
+      return value.replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[ch] || ch);
+    }
+    function badge(state: string) {
+      const cls = state === "BLOCKED" ? "block" : state === "ALLOWED" ? "allow" : "partial";
+      return `<span class="badge badge-${cls}">${STATE[state] || state}</span>`;
+    }
+    function applyUrl() {
+      const params = new URLSearchParams(location.search);
+      const map: Record<string, string> = {
+        operator: "agent-operator",
+        purpose: "agent-purpose",
+        aq: "agent-q",
+        q: "domain-q",
+        agent: "domain-agent",
+        state: "domain-state",
+        dpurpose: "domain-purpose",
+      };
+      for (const [key, attr] of Object.entries(map)) {
+        const el = root!.querySelector(`[data-filter="${attr}"]`) as HTMLInputElement | HTMLSelectElement | null;
+        if (el && params.has(key)) el.value = params.get(key) || "";
+      }
+      const collapse = root!.querySelector('[data-filter="collapse-amazon"]') as HTMLInputElement | null;
+      if (collapse) collapse.checked = params.get("collapse") === "1";
+    }
+    function writeUrl() {
+      const u = new URL(location.href);
+      const set = (key: string, attr: string) => {
+        const el = root!.querySelector(`[data-filter="${attr}"]`) as HTMLInputElement | HTMLSelectElement | null;
+        const v = el?.value.trim() || "";
+        if (v) u.searchParams.set(key, v);
+        else u.searchParams.delete(key);
+      };
+      set("operator", "agent-operator");
+      set("purpose", "agent-purpose");
+      set("aq", "agent-q");
+      set("q", "domain-q");
+      set("agent", "domain-agent");
+      set("state", "domain-state");
+      set("dpurpose", "domain-purpose");
+      const collapse = root!.querySelector('[data-filter="collapse-amazon"]') as HTMLInputElement | null;
+      if (collapse?.checked) u.searchParams.set("collapse", "1");
+      else u.searchParams.delete("collapse");
+      history.replaceState(null, "", u);
+    }
+    function renderAgents() {
+      const op = $('[data-filter="agent-operator"]').value;
+      const purpose = $('[data-filter="agent-purpose"]').value;
+      const q = $('[data-filter="agent-q"]').value.trim().toLowerCase();
+      const rows = agents.filter((a: { operator: string; purpose: string; token: string; agent: string; slug: string; named_block: number | null; named_allow: number | null; named_partial: number | null }) => {
+        if (op && a.operator !== op) return false;
+        if (purpose && a.purpose !== purpose) return false;
+        if (q && ![a.token, a.agent, a.operator, a.slug].join(" ").toLowerCase().includes(q)) return false;
+        return true;
+      });
+      agentCount.textContent = `${rows.length} of ${agents.length} agents`;
+      agentBody.innerHTML = rows
+        .map(
+          (a: { slug: string; token: string; operator: string; purpose: string; named_block: number | null; named_allow: number | null; named_partial: number | null }) =>
+            `<tr>
+              <td><a href="/data?agent=${encodeURIComponent(a.slug)}"><span class="mono">${esc(a.token)}</span></a></td>
+              <td>${esc(a.operator)}</td>
+              <td>${esc(PURPOSE[a.purpose] || a.purpose)}</td>
+              <td class="num">${num(a.named_block)}</td>
+              <td class="num">${num(a.named_allow)}</td>
+              <td class="num">${num(a.named_partial)}</td>
+            </tr>`,
+        )
+        .join("");
+    }
+    function renderDomains() {
+      const q = $('[data-filter="domain-q"]').value.trim().toLowerCase();
+      const agent = $('[data-filter="domain-agent"]').value;
+      const state = $('[data-filter="domain-state"]').value;
+      const purpose = $('[data-filter="domain-purpose"]').value;
+      const collapse = (root!.querySelector('[data-filter="collapse-amazon"]') as HTMLInputElement).checked;
+      const seen = new Set<string>();
+      const rows = named.filter((r: { domain: string; group_key?: string; agent_slug?: string; token?: string; state: string; purpose?: string; operator?: string; agent?: string }) => {
+        if (q && !r.domain.toLowerCase().includes(q) && !(r.group_key || "").toLowerCase().includes(q)) return false;
+        if (agent && r.agent_slug !== agent) return false;
+        if (state && r.state !== state) return false;
+        if (purpose && r.purpose !== purpose) return false;
+        if (collapse) {
+          const key = `${r.group_key}|${r.agent_slug || r.token}|${r.state}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+        }
+        return true;
+      });
+      domainCount.textContent =
+        named.length === 0
+          ? "Domain rows appear after the next warehouse export."
+          : `${rows.length} of ${named.length} named rules`;
+      if (rows.length === 0) {
+        domainBody.innerHTML = `<tr><td colspan="5" class="empty-cell">${
+          named.length === 0
+            ? "No domain rows in this snapshot yet."
+            : "No rows match these filters."
+        }</td></tr>`;
+        return;
+      }
+      domainBody.innerHTML = rows
+        .map(
+          (r: { domain: string; token?: string; agent?: string; operator?: string; purpose?: string; state: string }) =>
+            `<tr>
+              <td><a href="/domain/${encodeURIComponent(r.domain)}">${esc(r.domain)}</a></td>
+              <td class="mono">${esc(r.token || r.agent || "GPTBot")}</td>
+              <td>${esc(r.operator || "—")}</td>
+              <td>${esc(PURPOSE[r.purpose || ""] || r.purpose || "—")}</td>
+              <td>${badge(r.state)}</td>
+            </tr>`,
+        )
+        .join("");
+    }
+    function render() {
+      renderAgents();
+      renderDomains();
+      writeUrl();
+    }
+    applyUrl();
+    root.querySelectorAll("[data-filter]").forEach((el) => {
+      el.addEventListener("input", render);
+      el.addEventListener("change", render);
+    });
+    root.addEventListener("click", (event) => {
+      const a = (event.target as HTMLElement).closest("a[href^='/data?agent=']");
+      if (!a) return;
+      event.preventDefault();
+      const slug = new URL((a as HTMLAnchorElement).href).searchParams.get("agent") || "";
+      ($('[data-filter="domain-agent"]') as HTMLSelectElement).value = slug;
+      render();
+      domainBody.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    render();
+  }
+</script>

@@ -1,5 +1,10 @@
 {
   "framework": "astro",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "redirects": [
+    { "source": "/data/lab.json", "destination": "/data", "permanent": true },
+    { "source": "/data/gptbot-named.csv", "destination": "/data", "permanent": true },
+    { "source": "/data/gptbot-named-grouped.csv", "destination": "/data", "permanent": true }
+  ]
 }

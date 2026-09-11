@@ -5,8 +5,18 @@ import Stat from "../components/Stat.astro";
 import lab from "../data/lab.json";
 
 const s = lab.summary;
-const namedBlocks = lab.named.filter((r) => r.state === "BLOCKED");
+const agents = lab.by_agent ?? [];
 const n = (value: number) => new Intl.NumberFormat("en-US").format(value);
+const dash = (value: number | null | undefined) =>
+  value === null || value === undefined ? "—" : n(value);
+const purpose: Record<string, string> = {
+  training: "Training",
+  search_index: "Search",
+  user_fetch: "User fetch",
+  opt_out_token: "Opt-out token",
+  agentic: "Agentic",
+  unknown: "Unknown",
+};
 ---
 <Layout title="Crawl Policy Index">
   <section class="hero">
@@ -18,7 +28,7 @@ const n = (value: number) => new Intl.NumberFormat("en-US").format(value);
         between training and search. Built as a longitudinal index, not a traffic panel.
       </p>
       <div class="hero-actions">
-        <a class="btn btn-primary" href="/data">Get the lab snapshot</a>
+        <a class="btn btn-primary" href="/data">Open the explorer</a>
         <a class="btn btn-ghost" href="/methodology">Read the contract</a>
       </div>
     </div>
@@ -56,57 +66,31 @@ const n = (value: number) => new Intl.NumberFormat("en-US").format(value);
   </section>
 
   <section class="panel">
-    <h2>Lab readout</h2>
-    <p class="sub">Same warehouse view as the chart. Sanity: named Googlebot blocks should stay near zero.</p>
+    <h2>Named rules by agent</h2>
+    <p class="sub">Same explicit-only rule as the explorer. Claude, Grok, and the rest show up here once the next warehouse export includes them.</p>
     <table class="data">
       <thead>
         <tr>
-          <th>Measure</th>
-          <th class="num">N</th>
+          <th>Agent</th>
+          <th>Operator</th>
+          <th>Purpose</th>
+          <th class="num">Block</th>
+          <th class="num">Allow</th>
+          <th class="num">Partial</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>Calendar robots observations</td>
-          <td class="num">{n(s.calendar_observations)}</td>
-        </tr>
-        <tr>
-          <td>Named GPTBot allow / partial</td>
-          <td class="num">{n(s.gptbot_named_allow)} / {n(s.gptbot_named_partial)}</td>
-        </tr>
-        <tr>
-          <td>Named Googlebot block</td>
-          <td class="num">{n(s.googlebot_named_block)}</td>
-        </tr>
+        {agents.map((row) => (
+          <tr>
+            <td><a href={`/data?agent=${row.slug}`} class="mono">{row.token}</a></td>
+            <td>{row.operator}</td>
+            <td>{purpose[row.purpose] ?? row.purpose}</td>
+            <td class="num">{dash(row.named_block)}</td>
+            <td class="num">{dash(row.named_allow)}</td>
+            <td class="num">{dash(row.named_partial)}</td>
+          </tr>
+        ))}
       </tbody>
     </table>
   </section>
-
-  {namedBlocks.length > 0 ? (
-    <section class="panel">
-      <h2>Named GPTBot blocks</h2>
-      <p class="sub">{namedBlocks.length} domains. Amazon country sites listed separately; grouped count is in the hero stats.</p>
-      <table class="data">
-        <thead>
-          <tr>
-            <th>Domain</th>
-            <th>Group</th>
-          </tr>
-        </thead>
-        <tbody>
-          {namedBlocks.map((row) => (
-            <tr>
-              <td><a href={`/domain/${row.domain}`}>{row.domain}</a></td>
-              <td class="mono">{row.group_key}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
-  ) : (
-    <section class="empty">
-      <h2>Domain directory next</h2>
-      <p>Named-domain rows appear after the next warehouse export is committed. Snapshot totals above are already live from <code>{lab.view}</code>.</p>
-    </section>
-  )}
 </Layout>

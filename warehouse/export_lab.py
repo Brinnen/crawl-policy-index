@@ -6,6 +6,8 @@ Run on the droplet after warehouse-once.sh:
 
 Then copy site/tracker/src/data/lab.json into git so Vercel rebuilds from the snapshot.
 Vercel cannot reach Postgres on the droplet.
+
+The tracker does not publish this file as a download. It is a build input.
 """
 
 from __future__ import annotations
@@ -22,6 +24,40 @@ from warehouse.dsn import database_dsn  # noqa: E402
 from warehouse.load.org_group import group_key  # noqa: E402
 
 OUT = ROOT / "site" / "tracker" / "src" / "data" / "lab.json"
+
+NAMED_SQL = """
+SELECT
+    pi.domain,
+    pi.state::text,
+    pi.valid_from::text,
+    a.slug,
+    a.ua_token,
+    a.display_name,
+    a.operator,
+    a.purpose::text
+FROM policy_interval pi
+JOIN agent a ON a.slug = pi.agent_slug
+WHERE pi.valid_to IS NULL
+ORDER BY pi.domain, a.operator, a.slug
+"""
+
+BY_AGENT_SQL = """
+SELECT
+    a.slug,
+    a.ua_token,
+    a.display_name,
+    a.operator,
+    a.purpose::text,
+    count(*) FILTER (WHERE pi.state = 'BLOCKED'),
+    count(*) FILTER (WHERE pi.state = 'ALLOWED'),
+    count(*) FILTER (WHERE pi.state = 'PARTIAL')
+FROM agent a
+JOIN policy_interval pi
+  ON pi.agent_slug = a.slug
+ AND pi.valid_to IS NULL
+GROUP BY a.slug, a.ua_token, a.display_name, a.operator, a.purpose
+ORDER BY count(*) FILTER (WHERE pi.state = 'BLOCKED') DESC, a.operator, a.slug
+"""
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -81,21 +117,34 @@ def main(argv: list[str] | None = None) -> int:
                 """
             )
             google_block = cur.fetchone()[0]
-            cur.execute(
-                """
-                SELECT domain, state::text, valid_from::text
-                FROM v_lab_gptbot_named
-                ORDER BY domain
-                """
-            )
+            cur.execute(NAMED_SQL)
             named = [
                 {
-                    "domain": d,
+                    "domain": domain,
                     "state": state,
-                    "group_key": group_key(d),
                     "valid_from": vf,
+                    "agent_slug": slug,
+                    "token": token,
+                    "agent": display,
+                    "operator": operator,
+                    "purpose": purpose,
+                    "group_key": group_key(domain),
                 }
-                for d, state, vf in cur.fetchall()
+                for domain, state, vf, slug, token, display, operator, purpose in cur.fetchall()
+            ]
+            cur.execute(BY_AGENT_SQL)
+            by_agent = [
+                {
+                    "slug": slug,
+                    "token": token,
+                    "agent": display,
+                    "operator": operator,
+                    "purpose": purpose,
+                    "named_block": block,
+                    "named_allow": allow,
+                    "named_partial": partial,
+                }
+                for slug, token, display, operator, purpose, block, allow, partial in cur.fetchall()
             ]
             cur.execute(
                 """
@@ -119,7 +168,7 @@ def main(argv: list[str] | None = None) -> int:
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "panel_version": "sites1000",
         "parse_version": "1.0.0",
-        "view": "v_lab_gptbot_named_grouped",
+        "view": "policy_interval",
         "lab": True,
         "verified_agents": False,
         "summary": {
@@ -132,13 +181,14 @@ def main(argv: list[str] | None = None) -> int:
             "googlebot_named_block": google_block,
             "calendar_observations": obs,
         },
+        "by_agent": by_agent,
         "named": named,
         "grouped": grouped,
     }
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    print(f"wrote {out} ({len(named)} named rows)")
+    print(f"wrote {out} ({len(named)} named rows, {len(by_agent)} agents)")
     return 0
 
 

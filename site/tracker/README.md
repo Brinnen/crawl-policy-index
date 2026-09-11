@@ -2,6 +2,8 @@
 
 Static site. It reads `src/data/lab.json` at build time. It does not connect to the droplet.
 
+The public site is an explorer, not a data dump. Do not add download routes for JSON or CSV.
+
 ## Vercel
 
 1. Import the GitHub repo.

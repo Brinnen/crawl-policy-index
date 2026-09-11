@@ -15,6 +15,28 @@
     "googlebot_named_block": 2,
     "calendar_observations": 2008
   },
+  "by_agent": [
+    {
+      "slug": "openai-gptbot",
+      "token": "GPTBot",
+      "agent": "GPTBot",
+      "operator": "OpenAI",
+      "purpose": "training",
+      "named_block": 99,
+      "named_allow": 19,
+      "named_partial": 34
+    },
+    {
+      "slug": "google-googlebot",
+      "token": "Googlebot",
+      "agent": "Googlebot",
+      "operator": "Google",
+      "purpose": "search_index",
+      "named_block": 2,
+      "named_allow": null,
+      "named_partial": null
+    }
+  ],
   "named": [],
   "grouped": []
 }

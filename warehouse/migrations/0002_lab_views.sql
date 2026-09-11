@@ -34,4 +34,23 @@ GROUP BY 1;
 COMMENT ON VIEW v_lab_gptbot_named_grouped IS
     'LAB ONLY. Collapses amazon.* ccTLDs to amazon.com. Not a published figure.';
 
+CREATE OR REPLACE VIEW v_lab_named AS
+SELECT
+    pi.domain,
+    pi.state,
+    pi.valid_from,
+    pi.valid_to,
+    pi.parse_version,
+    a.slug AS agent_slug,
+    a.ua_token,
+    a.display_name,
+    a.operator,
+    a.purpose
+FROM policy_interval pi
+JOIN agent a ON a.slug = pi.agent_slug
+WHERE pi.valid_to IS NULL;
+
+COMMENT ON VIEW v_lab_named IS
+    'LAB ONLY. Open explicit intervals for every registered agent. Not a published figure.';
+
 COMMIT;

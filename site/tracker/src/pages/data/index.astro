@@ -1,37 +1,22 @@
 ---
 import Layout from "../../layouts/Layout.astro";
+import Explorer from "../../components/Explorer.astro";
 import lab from "../../data/lab.json";
+
+const agents = lab.by_agent ?? [];
+const named = lab.named ?? [];
 ---
-<Layout title="Data — Crawl Policy Index">
+<Layout
+  title="Explorer — Crawl Policy Index"
+  description="Filter named AI crawl rules by agent, operator, purpose, and domain. Lab preview — not a published series."
+>
   <div class="page-head">
-    <p class="kicker">Exports</p>
-    <h1>Take the snapshot, not a screenshot.</h1>
+    <p class="kicker">Explorer</p>
+    <h1>Named rules, sliced your way.</h1>
   </div>
   <p class="lede">
-    Files are generated from warehouse views at export time. Lab snapshots, not a published series.
+    Filter the lab snapshot. Explicit tokens only — a wildcard block is not a named decision.
     Panel <code>{lab.panel_version}</code>, parse {lab.parse_version}.
   </p>
-  <div class="downloads">
-    <a class="download" href="/data/lab.json">
-      <span class="download-copy">
-        <strong>lab.json</strong>
-        <span class="meta">Full export the site is built from</span>
-      </span>
-      <span class="kind">JSON</span>
-    </a>
-    <a class="download" href="/data/gptbot-named.csv">
-      <span class="download-copy">
-        <strong>gptbot-named.csv</strong>
-        <span class="meta">One row per named GPTBot interval</span>
-      </span>
-      <span class="kind">CSV</span>
-    </a>
-    <a class="download" href="/data/gptbot-named-grouped.csv">
-      <span class="download-copy">
-        <strong>gptbot-named-grouped.csv</strong>
-        <span class="meta">amazon.* country sites collapsed</span>
-      </span>
-      <span class="kind">CSV</span>
-    </a>
-  </div>
+  <Explorer agents={agents} named={named} />
 </Layout>
