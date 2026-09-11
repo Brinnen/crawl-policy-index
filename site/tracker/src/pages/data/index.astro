@@ -1,22 +1,24 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import Explorer from "../../components/Explorer.astro";
+import Glossary from "../../components/Glossary.astro";
 import lab from "../../data/lab.json";
 
 const agents = lab.by_agent ?? [];
 const named = lab.named ?? [];
 ---
 <Layout
-  title="Explorer — Crawl Policy Index"
-  description="Filter named AI crawl rules by agent, operator, purpose, and domain. Lab preview — not a published series."
+  title="Explore — Crawl Policy Index"
+  description="Look up which websites named which AI bots, and whether they allowed, blocked, or mixed them."
 >
   <div class="page-head">
-    <p class="kicker">Explorer</p>
-    <h1>Named rules, sliced your way.</h1>
+    <p class="kicker">Explore</p>
+    <h1>Look up a bot or a website.</h1>
   </div>
   <p class="lede">
-    Filter the lab snapshot. Explicit tokens only — a wildcard block is not a named decision.
-    Panel <code>{lab.panel_version}</code>, parse {lab.parse_version}.
+    Filter the tables. A website only appears if it wrote the bot’s name in its public rules.
+    This is a 1,000-site test list — not the whole internet.
   </p>
   <Explorer agents={agents} named={named} />
+  <Glossary />
 </Layout>

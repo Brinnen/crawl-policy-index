@@ -12,15 +12,15 @@ interface Props {
 
 const {
   title,
-  description = "The index of site-declared AI crawl policy. Lab preview — figures are not for publication.",
+  description = "See which websites allow or block AI crawlers. Early preview from 1,000 test sites — not a published finding.",
 } = Astro.props;
 
 const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
 const nav = [
   { href: "/", label: "Overview" },
-  { href: "/methodology", label: "Methodology" },
-  { href: "/data", label: "Explorer" },
-  { href: "/bot", label: "Bot" },
+  { href: "/methodology", label: "How we count" },
+  { href: "/data", label: "Explore" },
+  { href: "/bot", label: "Site owners" },
 ];
 
 function isActive(href: string) {
@@ -28,7 +28,12 @@ function isActive(href: string) {
   return path === href || path.startsWith(`${href}/`);
 }
 
-const exported = lab.generated_at.replace("T", " ").replace("Z", " UTC");
+const exportedDate = new Date(lab.generated_at).toLocaleDateString("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -47,7 +52,7 @@ const exported = lab.generated_at.replace("T", " ").replace("Z", " UTC");
     <div class="shell">
       <div class="notice">
         <div class="wrap">
-          Lab preview · panel <code>{lab.panel_version}</code> · agents unverified · not a published series
+          Early preview · 1,000 test sites · do not cite as “the web”
         </div>
       </div>
       <header class="topbar">
@@ -77,8 +82,8 @@ const exported = lab.generated_at.replace("T", " ").replace("Z", " UTC");
       </main>
       <footer class="site-footer">
         <div class="wrap">
-          <span>View <code>{lab.view}</code> · parse {lab.parse_version} · exported {exported}</span>
-          <span>Fetch identity stays at crawlpolicyindex.org/bot</span>
+          <span>Snapshot {exportedDate} · 1,000-site test · not for publication</span>
+          <span><a href="/bot">If we visited your website</a></span>
         </div>
       </footer>
     </div>

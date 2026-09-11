@@ -28,7 +28,7 @@ function pct(n: number) {
   return `${Math.round((n / realTotal) * 100)}%`;
 }
 ---
-<svg class="chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Named GPTBot states as a stacked bar">
+<svg class="chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Among sites that named GPTBot: how many blocked, allowed, or mixed it">
   <defs>
     <clipPath id="cpi-bar">
       <rect x="0" y={y} width={w} height={barH} rx="14" />
@@ -44,7 +44,7 @@ function pct(n: number) {
   </g>
 </svg>
 <div class="legend">
-  <span><i class="swatch" style="background:var(--block)"></i>Block {block} · {pct(block)}</span>
-  <span><i class="swatch" style="background:var(--allow)"></i>Allow {allow} · {pct(allow)}</span>
-  <span><i class="swatch" style="background:var(--partial)"></i>Partial {partial} · {pct(partial)}</span>
+  <span><i class="swatch" style="background:var(--block)"></i>Blocked {block} · {pct(block)}</span>
+  <span><i class="swatch" style="background:var(--allow)"></i>Allowed {allow} · {pct(allow)}</span>
+  <span><i class="swatch" style="background:var(--partial)"></i>Mixed {partial} · {pct(partial)}</span>
 </div>

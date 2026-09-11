@@ -2,64 +2,89 @@
 import Layout from "../layouts/Layout.astro";
 import lab from "../data/lab.json";
 ---
-<Layout title="Methodology — Crawl Policy Index">
+<Layout
+  title="How we count — Crawl Policy Index"
+  description="Plain-language explanation of what the Crawl Policy Index measures, and what it does not."
+>
   <div class="page-head">
-    <p class="kicker">Contract</p>
-    <h1>How a number is allowed to exist.</h1>
+    <p class="kicker">How we count</p>
+    <h1>What these numbers mean — and what they don’t.</h1>
   </div>
   <div class="prose">
     <p>
-      v1 measures <strong>robots.txt only</strong>. Policy that lives in HTTP 402 responses
-      or signed-agent headers is out of scope and must not be inferred from these figures.
+      This index records what websites <strong>say</strong> about AI crawlers in a public
+      file called robots.txt. It is not a measure of traffic, and it is not a scrape of
+      page content.
     </p>
 
-    <h2>This preview is lab output</h2>
+    <h2>In one minute</h2>
+    <ul>
+      <li>We look at a fixed list of 1,000 websites (a test list, not “the web”).</li>
+      <li>Once a day we fetch each site’s public crawl rules.</li>
+      <li>We record whether the site named a bot such as GPTBot or ClaudeBot, and whether it allowed, blocked, or mixed that bot.</li>
+      <li>If a site never named the bot, we do not pretend it made a decision about that bot.</li>
+    </ul>
+
+    <h2>What is robots.txt?</h2>
     <p>
-      Agents in <code>registry/agents.yml</code> ship with <code>verified: false</code>.
-      The published function <code>effective_policy(as_of_date)</code> therefore returns no rows.
-      Figures here come from <code>{lab.view}</code> on panel <code>{lab.panel_version}</code>
-      and must not be quoted as “the web.”
+      It is a short public file most websites already publish. Search engines have used it
+      for years. It is the site speaking in public: “this automated visitor may look around,
+      that one may not.” Anyone can read it. We do.
+    </p>
+    <p>
+      We do <strong>not</strong> open articles, product pages, or comment threads. We also
+      do not yet measure paywalls or HTTP “pay to crawl” responses. Those are a different
+      kind of rule and are out of scope here.
     </p>
 
-    <h2>Panel</h2>
+    <h2>Named vs a blanket “no”</h2>
     <p>
-      Every statistic is of a named, frozen panel. The current lab panel is
-      <code>{lab.panel_version}</code> — the first 1,000 non-infrastructure pay-level domains
-      from a pinned Tranco list. Re-running <code>panel/build_panel.py</code> with the same
-      sources and seed must produce a byte-identical CSV.
+      Many sites have one rule that says “block everyone.” That is a real policy, but it is
+      not a decision about GPTBot or ClaudeBot in particular. Headlines on this site count
+      <strong>named</strong> rules: the site wrote that bot’s name.
+    </p>
+    <p>
+      A site with no readable rules file is left out of the count. We do not treat silence
+      as permission.
     </p>
 
-    <h2>Detect gate</h2>
+    <h2>Why you should not write “the web”</h2>
     <p>
-      Bodies at <code>/robots.txt</code> are classified before parsing. Rows classified
-      <code>ambiguous</code>, <code>not_robots_html</code>, <code>not_robots_binary</code>,
-      or <code>empty</code> are excluded from policy aggregates.
+      These figures come from a test list of 1,000 well-known sites, snapshot
+      {lab.generated_at.slice(0, 10)}. The bot names have not finished a human
+      double-check against each company’s own documentation. Treat this as a lab preview,
+      not a published finding, and not a percentage of the internet.
     </p>
 
-    <h2>Effective policy</h2>
-    <p><code>(domain, agent) → state</code> is resolved only by <code>effective_policy(as_of_date)</code>:</p>
-    <ol>
-      <li>verified and active agents only;</li>
-      <li>an explicit interval when the file named the agent;</li>
-      <li>otherwise the <code>*</code> group when one exists;</li>
-      <li>otherwise <code>ALLOWED</code> / <code>NONE</code>.</li>
-    </ol>
+    <h2>Training, search, and a person asking</h2>
+    <p>Companies often run more than one bot. We keep them apart on purpose:</p>
+    <ul>
+      <li><strong>Training AI</strong> — collecting pages to build a model (GPTBot, ClaudeBot).</li>
+      <li><strong>AI search</strong> — collecting pages to answer questions or cite sources.</li>
+      <li><strong>When a person asks</strong> — fetching one page because a human requested that link.</li>
+    </ul>
     <p>
-      A domain with no trustworthy robots.txt is absent, not counted as allowing crawlers.
-      Explicit and wildcard blocks are never conflated in a headline.
+      A publisher can block training and still allow search. Mixing those two into “AI bots”
+      hides the story.
     </p>
 
-    <h2>Tokens that are not crawlers</h2>
+    <h2>Switches that are not crawlers</h2>
     <p>
-      <code>Google-Extended</code>, <code>Applebot-Extended</code>, and other
-      <code>opt_out_token</code> entries are control signals. They are never summed into
-      crawler-blocking rates.
+      Names such as Google-Extended and Applebot-Extended are opt-out signals. They do not
+      crawl. Never add them into a “how many crawlers were blocked” total.
     </p>
 
-    <h2>Reproducibility</h2>
+    <h2>Googlebot is a sanity check</h2>
     <p>
-      Raw bytes are stored once per SHA-256 and never discarded. A parser bug is fixed by
-      bumping <code>parse_version</code> and re-parsing. Prior parse rows are kept.
+      Almost no serious site blocks Google’s main search crawler. If our tables ever showed
+      a large share doing that, the bug would be in our reading, not in the web.
+    </p>
+
+    <h2>Keeping the record honest</h2>
+    <p>
+      We store the original file so we can re-read it if our software is wrong. A mistake
+      is fixed by reading the same files again — not by quietly changing yesterday’s number.
+      Every figure on the site should be explainable from this page. If it is not, do not cite it.
     </p>
   </div>
 </Layout>

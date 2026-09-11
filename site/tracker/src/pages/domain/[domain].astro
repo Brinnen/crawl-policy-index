@@ -1,6 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import lab from "../../data/lab.json";
+import { purposeLabel, STATE_LABELS } from "../../lib/labels";
 
 type NamedRow = {
   domain: string;
@@ -34,41 +35,33 @@ interface Props {
 }
 
 const { domain, rows } = Astro.props;
-const purpose: Record<string, string> = {
-  training: "Training",
-  search_index: "Search",
-  user_fetch: "User fetch",
-  opt_out_token: "Opt-out token",
-  agentic: "Agentic",
-  unknown: "Unknown",
-};
 ---
 <Layout title={`${domain} — Crawl Policy Index`}>
   <div class="page-head">
-    <p class="kicker">Domain</p>
+    <p class="kicker">Website</p>
     <h1>{domain}</h1>
   </div>
   <section class="panel">
-    <h2>Named tokens</h2>
-    <p class="sub">Open explicit intervals for this host. Not an effective-policy row.</p>
+    <h2>Bots this site named</h2>
+    <p class="sub">Only rules where this website wrote the bot’s name. A blanket “block everyone” rule is not listed.</p>
     <table class="data">
       <thead>
         <tr>
-          <th>Agent</th>
-          <th>Operator</th>
-          <th>Purpose</th>
-          <th>State</th>
-          <th>From</th>
+          <th>Bot</th>
+          <th>Company</th>
+          <th>What it’s for</th>
+          <th>What they said</th>
+          <th>Since</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((row) => (
           <tr>
-            <td class="mono">{row.token ?? row.agent ?? "GPTBot"}</td>
+            <td>{row.token ?? row.agent ?? "GPTBot"}</td>
             <td>{row.operator ?? "—"}</td>
-            <td>{purpose[row.purpose ?? ""] ?? row.purpose ?? "—"}</td>
-            <td class="mono">{row.state}</td>
-            <td class="mono">{row.valid_from}</td>
+            <td>{purposeLabel(row.purpose)}</td>
+            <td>{STATE_LABELS[row.state] ?? row.state}</td>
+            <td>{row.valid_from}</td>
           </tr>
         ))}
       </tbody>
