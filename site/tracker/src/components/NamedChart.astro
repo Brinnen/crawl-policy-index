@@ -3,32 +3,38 @@ interface Props {
   block: number;
   allow: number;
   partial: number;
+  blanket?: number | null;
 }
-const { block, allow, partial } = Astro.props;
-const realTotal = block + allow + partial;
+const { block, allow, partial, blanket = null } = Astro.props;
+const blanketN = typeof blanket === "number" ? blanket : 0;
+const showBlanket = typeof blanket === "number";
+const realTotal = block + allow + partial + blanketN;
 const total = Math.max(realTotal, 1);
 const w = 920;
 const h = 56;
 const y = 14;
 const barH = 28;
 const segs = [
-  { n: block, color: "var(--block)" },
-  { n: allow, color: "var(--allow)" },
-  { n: partial, color: "var(--partial)" },
+  { n: block, color: "var(--block)", show: true },
+  { n: blanketN, color: "var(--blanket)", show: showBlanket },
+  { n: allow, color: "var(--allow)", show: true },
+  { n: partial, color: "var(--partial)", show: true },
 ];
 let cursor = 0;
-const rects = segs.map((seg) => {
-  const width = realTotal === 0 ? 0 : (seg.n / total) * w;
-  const rect = { x: cursor, width, color: seg.color, n: seg.n };
-  cursor += width;
-  return rect;
-});
+const rects = segs
+  .filter((seg) => seg.show)
+  .map((seg) => {
+    const width = realTotal === 0 ? 0 : (seg.n / total) * w;
+    const rect = { x: cursor, width, color: seg.color };
+    cursor += width;
+    return rect;
+  });
 function pct(n: number) {
   if (realTotal === 0) return "0%";
   return `${Math.round((n / realTotal) * 100)}%`;
 }
 ---
-<svg class="chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Among sites that named GPTBot: how many blocked, allowed, or mixed it">
+<svg class="chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="How test sites treat GPTBot: named block, block-all-bots, named allow, named mixed">
   <defs>
     <clipPath id="cpi-bar">
       <rect x="0" y={y} width={w} height={barH} rx="14" />
@@ -44,7 +50,12 @@ function pct(n: number) {
   </g>
 </svg>
 <div class="legend">
-  <span><i class="swatch" style="background:var(--block)"></i>Blocked {block} · {pct(block)}</span>
-  <span><i class="swatch" style="background:var(--allow)"></i>Allowed {allow} · {pct(allow)}</span>
-  <span><i class="swatch" style="background:var(--partial)"></i>Mixed {partial} · {pct(partial)}</span>
+  <span><i class="swatch" style="background:var(--block)"></i>Named GPTBot, blocked {block} · {pct(block)}</span>
+  {showBlanket ? (
+    <span><i class="swatch" style="background:var(--blanket)"></i>Block all bots {blanketN} · {pct(blanketN)}</span>
+  ) : (
+    <span><i class="swatch" style="background:var(--blanket)"></i>Block all bots — next refresh</span>
+  )}
+  <span><i class="swatch" style="background:var(--allow)"></i>Named GPTBot, allowed {allow} · {pct(allow)}</span>
+  <span><i class="swatch" style="background:var(--partial)"></i>Named GPTBot, mixed {partial} · {pct(partial)}</span>
 </div>

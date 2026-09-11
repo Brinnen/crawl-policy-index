@@ -28,15 +28,16 @@ const dash = (value: number | null | undefined) =>
       </div>
     </div>
     <aside class="instrument">
-      <p class="instrument-label">Sites that named GPTBot</p>
+      <p class="instrument-label">How test sites treat GPTBot</p>
       <p class="instrument-sub">
-        GPTBot is OpenAI’s crawler for training ChatGPT. We only count sites that wrote
-        that name. A blanket “block all bots” rule is not included here.
+        GPTBot trains ChatGPT. Pink: the site named GPTBot and said no.
+        Purple: the site never named GPTBot, but said “block all bots” — so GPTBot is blocked too.
       </p>
       <NamedChart
         block={s.gptbot_named_block}
         allow={s.gptbot_named_allow}
         partial={s.gptbot_named_partial}
+        blanket={s.gptbot_blanket_block}
       />
     </aside>
   </section>
@@ -80,10 +81,10 @@ const dash = (value: number | null | undefined) =>
   </section>
 
   <section class="panel">
-    <h2>How many sites named each bot?</h2>
+    <h2>How many sites wrote each rule?</h2>
     <p class="sub">
-      Click a name to open the tables. More companies (Claude, Common Crawl, and others)
-      appear after the next data refresh.
+      Named bots, plus the site-wide “block all bots” rule. Click a name to open the tables.
+      More companies appear after the next data refresh.
     </p>
     <table class="data">
       <thead>

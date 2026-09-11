@@ -6,19 +6,20 @@ import lab from "../../data/lab.json";
 
 const agents = lab.by_agent ?? [];
 const named = lab.named ?? [];
+const blanket = lab.blanket ?? [];
 ---
 <Layout
   title="Explore — Crawl Policy Index"
-  description="Look up which websites named which AI bots, and whether they allowed, blocked, or mixed them."
+  description="Look up which websites named which AI bots, and whether they allowed, blocked, or mixed them — including a blanket block-all-bots rule."
 >
   <div class="page-head">
     <p class="kicker">Explore</p>
     <h1>Look up a bot or a website.</h1>
   </div>
   <p class="lede">
-    Filter the tables. A website only appears if it wrote the bot’s name in its public rules.
+    Filter the tables. Named bots sit next to sites that only said “block all bots.”
     This is a 1,000-site test list — not the whole internet.
   </p>
-  <Explorer agents={agents} named={named} />
+  <Explorer agents={agents} named={named} blanket={blanket} />
   <Glossary />
 </Layout>

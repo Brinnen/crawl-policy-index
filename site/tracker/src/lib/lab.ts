@@ -4,6 +4,7 @@ export type LabSummary = {
   gptbot_named_allow: number;
   gptbot_named_partial: number;
   gptbot_named_block_grouped: number;
+  gptbot_blanket_block?: number | null;
   openai_split: number;
   googlebot_named_block: number;
   calendar_observations: number;
@@ -33,5 +34,6 @@ export type LabExport = {
   verified_agents: false;
   summary: LabSummary;
   named: NamedRow[];
+  blanket?: NamedRow[];
   grouped: GroupedRow[];
 };

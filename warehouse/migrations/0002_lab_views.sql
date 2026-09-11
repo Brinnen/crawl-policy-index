@@ -53,4 +53,26 @@ WHERE pi.valid_to IS NULL;
 COMMENT ON VIEW v_lab_named IS
     'LAB ONLY. Open explicit intervals for every registered agent. Not a published figure.';
 
+CREATE OR REPLACE VIEW v_lab_gptbot_blanket AS
+SELECT
+    wi.domain,
+    wi.state,
+    wi.valid_from,
+    wi.valid_to,
+    wi.content_sha256
+FROM wildcard_interval wi
+WHERE wi.valid_to IS NULL
+  AND wi.has_wildcard_group
+  AND wi.state = 'BLOCKED'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM policy_interval pi
+      WHERE pi.domain = wi.domain
+        AND pi.agent_slug = 'openai-gptbot'
+        AND pi.valid_to IS NULL
+  );
+
+COMMENT ON VIEW v_lab_gptbot_blanket IS
+    'LAB ONLY. Open * BLOCKED intervals on domains that did not name GPTBot. Not a published figure.';
+
 COMMIT;

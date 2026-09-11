@@ -22,7 +22,7 @@ import lab from "../data/lab.json";
       <li>We look at a fixed list of 1,000 websites (a test list, not “the web”).</li>
       <li>Once a day we fetch each site’s public crawl rules.</li>
       <li>We record whether the site named a bot such as GPTBot or ClaudeBot, and whether it allowed, blocked, or mixed that bot.</li>
-      <li>If a site never named the bot, we do not pretend it made a decision about that bot.</li>
+      <li>If the site never named the bot but said “block all bots,” we still count it — and we label it as that blanket policy, not as a named decision.</li>
     </ul>
 
     <h2>What is robots.txt?</h2>
@@ -39,9 +39,13 @@ import lab from "../data/lab.json";
 
     <h2>Named vs a blanket “no”</h2>
     <p>
-      Many sites have one rule that says “block everyone.” That is a real policy, but it is
-      not a decision about GPTBot or ClaudeBot in particular. Headlines on this site count
-      <strong>named</strong> rules: the site wrote that bot’s name.
+      Many sites have one rule that says “block everyone.” That is a real policy, and we
+      include it. We do <strong>not</strong> treat it as the site naming GPTBot or ClaudeBot.
+    </p>
+    <p>
+      On the overview chart, pink is “named this bot and blocked it.” Purple is “never
+      named this bot, but blocked all bots.” Both mean GPTBot cannot crawl. They are
+      different kinds of decision.
     </p>
     <p>
       A site with no readable rules file is left out of the count. We do not treat silence

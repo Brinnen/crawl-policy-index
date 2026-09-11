@@ -21,15 +21,17 @@ interface NamedRow {
   agent?: string;
   operator?: string;
   purpose?: string;
+  kind?: string;
   group_key: string;
 }
 
 interface Props {
   agents: AgentRow[];
   named: NamedRow[];
+  blanket: NamedRow[];
 }
 
-const { agents, named } = Astro.props;
+const { agents, named, blanket } = Astro.props;
 
 const operators = [...new Set(agents.map((a) => a.operator))].sort();
 const purposes = [...new Set(agents.map((a) => a.purpose))].sort();
@@ -38,6 +40,7 @@ const tokens = [...agents].sort((a, b) => a.token.localeCompare(b.token));
 const payload = JSON.stringify({
   agents,
   named,
+  blanket,
   purposeLabels: PURPOSE_LABELS,
   stateLabels: STATE_LABELS,
 }).replaceAll("<", "\\u003c");
@@ -45,7 +48,7 @@ const payload = JSON.stringify({
 <div class="explorer" id="cpi-explorer">
   <section class="panel">
     <h2>By bot</h2>
-    <p class="sub">How many sites in this test list wrote each bot’s name, and what they said. An opt-out signal is not a crawler — leave those out if you are counting bots.</p>
+    <p class="sub">How many sites named each bot — plus the site-wide “block all bots” rule, which is a policy of its own. An opt-out signal is not a crawler.</p>
     <div class="filters filters-3">
       <label class="field">
         <span>Company</span>
@@ -86,7 +89,7 @@ const payload = JSON.stringify({
 
   <section class="panel">
     <h2>By website</h2>
-    <p class="sub">One row for each website that named that bot. Sites that only said “block everyone” are not listed here.</p>
+    <p class="sub">Named bots, and sites that only said “block all bots.” Filter GPTBot to include those blanket rules — they are labelled as such, not as a GPTBot-specific no.</p>
     <div class="filters">
       <label class="field">
         <span>Website</span>
@@ -142,9 +145,10 @@ const payload = JSON.stringify({
   const root = document.getElementById("cpi-explorer");
   const raw = document.getElementById("cpi-explorer-data");
   if (root && raw) {
-    const data = JSON.parse(raw.textContent || '{"agents":[],"named":[],"purposeLabels":{},"stateLabels":{}}');
+    const data = JSON.parse(raw.textContent || '{"agents":[],"named":[],"blanket":[],"purposeLabels":{},"stateLabels":{}}');
     const agents = data.agents || [];
     const named = data.named || [];
+    const blanket = data.blanket || [];
     const PURPOSE = data.purposeLabels || {};
     const STATE = data.stateLabels || {};
     const $ = (sel: string) => root.querySelector(sel) as HTMLInputElement | HTMLSelectElement;
@@ -169,9 +173,12 @@ const payload = JSON.stringify({
     function purpose(value: string | undefined) {
       return PURPOSE[value || ""] || value || "—";
     }
-    function badge(state: string) {
-      const cls = state === "BLOCKED" ? "block" : state === "ALLOWED" ? "allow" : "partial";
-      return `<span class="badge badge-${cls}">${esc(STATE[state] || state)}</span>`;
+    function badge(row: { state: string; kind?: string; purpose?: string }) {
+      if (row.kind === "blanket" || row.purpose === "blanket") {
+        return `<span class="badge badge-blanket">Block all bots</span>`;
+      }
+      const cls = row.state === "BLOCKED" ? "block" : row.state === "ALLOWED" ? "allow" : "partial";
+      return `<span class="badge badge-${cls}">${esc(STATE[row.state] || row.state)}</span>`;
     }
     function applyUrl() {
       const params = new URLSearchParams(location.search);
@@ -242,10 +249,23 @@ const payload = JSON.stringify({
       const state = $('[data-filter="domain-state"]').value;
       const purposeFilter = $('[data-filter="domain-purpose"]').value;
       const collapse = (root!.querySelector('[data-filter="collapse-amazon"]') as HTMLInputElement).checked;
+      const namedGpt = new Set(
+        named.filter((r: { agent_slug?: string }) => r.agent_slug === "openai-gptbot").map((r: { domain: string }) => r.domain),
+      );
+      const source = [
+        ...named.map((r: { kind?: string }) => ({ ...r, kind: r.kind || "named" })),
+        ...blanket,
+      ];
       const seen = new Set<string>();
-      const rows = named.filter((r: { domain: string; group_key?: string; agent_slug?: string; token?: string; state: string; purpose?: string; operator?: string; agent?: string }) => {
+      const rows = source.filter((r: { domain: string; group_key?: string; agent_slug?: string; token?: string; state: string; purpose?: string; kind?: string }) => {
         if (q && !r.domain.toLowerCase().includes(q) && !(r.group_key || "").toLowerCase().includes(q)) return false;
-        if (agent && r.agent_slug !== agent) return false;
+        if (agent === "openai-gptbot") {
+          const namedHit = r.agent_slug === "openai-gptbot";
+          const inherited = r.kind === "blanket" && !namedGpt.has(r.domain);
+          if (!namedHit && !inherited) return false;
+        } else if (agent && r.agent_slug !== agent) {
+          return false;
+        }
         if (state && r.state !== state) return false;
         if (purposeFilter && r.purpose !== purposeFilter) return false;
         if (collapse) {
@@ -255,13 +275,14 @@ const payload = JSON.stringify({
         }
         return true;
       });
+      const total = source.length;
       domainCount.textContent =
-        named.length === 0
+        total === 0
           ? "The website list is not in this preview yet. Totals above are already live."
-          : `Showing ${rows.length} of ${named.length} website rules`;
+          : `Showing ${rows.length} of ${total} website rules`;
       if (rows.length === 0) {
         domainBody.innerHTML = `<tr><td colspan="5" class="empty-cell">${
-          named.length === 0
+          total === 0
             ? "Site-by-site rows will appear after the next data refresh."
             : "Nothing matches these filters. Try All bots, or clear the website search."
         }</td></tr>`;
@@ -269,13 +290,13 @@ const payload = JSON.stringify({
       }
       domainBody.innerHTML = rows
         .map(
-          (r: { domain: string; token?: string; agent?: string; operator?: string; purpose?: string; state: string }) =>
+          (r: { domain: string; token?: string; agent?: string; operator?: string; purpose?: string; state: string; kind?: string }) =>
             `<tr>
               <td><a href="/domain/${encodeURIComponent(r.domain)}">${esc(r.domain)}</a></td>
               <td>${esc(r.token || r.agent || "GPTBot")}</td>
               <td>${esc(r.operator || "—")}</td>
               <td>${esc(purpose(r.purpose))}</td>
-              <td>${badge(r.state)}</td>
+              <td>${badge(r)}</td>
             </tr>`,
         )
         .join("");

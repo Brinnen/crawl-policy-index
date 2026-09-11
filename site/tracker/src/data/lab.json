@@ -11,11 +11,22 @@
     "gptbot_named_allow": 19,
     "gptbot_named_partial": 34,
     "gptbot_named_block_grouped": 87,
+    "gptbot_blanket_block": null,
     "openai_split": 56,
     "googlebot_named_block": 2,
     "calendar_observations": 2008
   },
   "by_agent": [
+    {
+      "slug": "wildcard-star",
+      "token": "All bots (*)",
+      "agent": "All bots",
+      "operator": "Site-wide rule",
+      "purpose": "blanket",
+      "named_block": null,
+      "named_allow": null,
+      "named_partial": null
+    },
     {
       "slug": "openai-gptbot",
       "token": "GPTBot",
@@ -38,5 +49,6 @@
     }
   ],
   "named": [],
+  "blanket": [],
   "grouped": []
 }

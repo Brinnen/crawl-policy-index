@@ -117,6 +117,35 @@ def main(argv: list[str] | None = None) -> int:
                 """
             )
             google_block = cur.fetchone()[0]
+            cur.execute(
+                """
+                SELECT
+                    count(*) FILTER (WHERE state = 'BLOCKED'),
+                    count(*) FILTER (WHERE state = 'ALLOWED'),
+                    count(*) FILTER (WHERE state = 'PARTIAL')
+                FROM wildcard_interval
+                WHERE valid_to IS NULL
+                  AND has_wildcard_group
+                """
+            )
+            wc_block, wc_allow, wc_partial = cur.fetchone()
+            cur.execute(
+                """
+                SELECT count(*)
+                FROM wildcard_interval wi
+                WHERE wi.valid_to IS NULL
+                  AND wi.has_wildcard_group
+                  AND wi.state = 'BLOCKED'
+                  AND NOT EXISTS (
+                    SELECT 1
+                    FROM policy_interval pi
+                    WHERE pi.domain = wi.domain
+                      AND pi.agent_slug = 'openai-gptbot'
+                      AND pi.valid_to IS NULL
+                  )
+                """
+            )
+            gptbot_blanket = cur.fetchone()[0]
             cur.execute(NAMED_SQL)
             named = [
                 {
@@ -128,6 +157,7 @@ def main(argv: list[str] | None = None) -> int:
                     "agent": display,
                     "operator": operator,
                     "purpose": purpose,
+                    "kind": "named",
                     "group_key": group_key(domain),
                 }
                 for domain, state, vf, slug, token, display, operator, purpose in cur.fetchall()
@@ -163,7 +193,45 @@ def main(argv: list[str] | None = None) -> int:
                 }
                 for g, dr, nb, na, np in cur.fetchall()
             ]
+            cur.execute(
+                """
+                SELECT domain, state::text, valid_from::text
+                FROM wildcard_interval
+                WHERE valid_to IS NULL
+                  AND has_wildcard_group
+                  AND state = 'BLOCKED'
+                ORDER BY domain
+                """
+            )
+            blanket = [
+                {
+                    "domain": domain,
+                    "state": state,
+                    "valid_from": vf,
+                    "agent_slug": "wildcard-star",
+                    "token": "All bots (*)",
+                    "agent": "All bots",
+                    "operator": "Site-wide rule",
+                    "purpose": "blanket",
+                    "kind": "blanket",
+                    "group_key": group_key(domain),
+                }
+                for domain, state, vf in cur.fetchall()
+            ]
 
+    by_agent.insert(
+        0,
+        {
+            "slug": "wildcard-star",
+            "token": "All bots (*)",
+            "agent": "All bots",
+            "operator": "Site-wide rule",
+            "purpose": "blanket",
+            "named_block": wc_block,
+            "named_allow": wc_allow,
+            "named_partial": wc_partial,
+        },
+    )
     payload = {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "panel_version": "sites1000",
@@ -177,18 +245,22 @@ def main(argv: list[str] | None = None) -> int:
             "gptbot_named_allow": named_allow,
             "gptbot_named_partial": named_partial,
             "gptbot_named_block_grouped": grouped_block,
+            "gptbot_blanket_block": gptbot_blanket,
             "openai_split": split,
             "googlebot_named_block": google_block,
             "calendar_observations": obs,
         },
         "by_agent": by_agent,
         "named": named,
+        "blanket": blanket,
         "grouped": grouped,
     }
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    print(f"wrote {out} ({len(named)} named rows, {len(by_agent)} agents)")
+    print(
+        f"wrote {out} ({len(named)} named rows, {len(blanket)} block-all-bots, {len(by_agent)} agents)"
+    )
     return 0
 
 

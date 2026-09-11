@@ -63,6 +63,23 @@ def main() -> int:
                 """
             )
             google_block = cur.fetchone()[0]
+            cur.execute(
+                """
+                SELECT count(*)
+                FROM wildcard_interval wi
+                WHERE wi.valid_to IS NULL
+                  AND wi.has_wildcard_group
+                  AND wi.state = 'BLOCKED'
+                  AND NOT EXISTS (
+                    SELECT 1
+                    FROM policy_interval pi
+                    WHERE pi.domain = wi.domain
+                      AND pi.agent_slug = 'openai-gptbot'
+                      AND pi.valid_to IS NULL
+                  )
+                """
+            )
+            gptbot_blanket = cur.fetchone()[0]
 
     print("Lab warehouse — NOT for publication (agents are unverified)")
     print(f"  calendar robots observations: {obs}")
@@ -70,6 +87,7 @@ def main() -> int:
     print(f"  GPTBot named rows: {named_total}  block={named_block} allow={named_allow} partial={named_partial}")
     print(f"  GPTBot named BLOCK after collapsing amazon.*: {grouped_block}")
     print(f"  named GPTBot block but OpenAI search not blocked: {split}")
+    print(f"  GPTBot blocked only via block-all-bots (*): {gptbot_blanket}")
     print(f"  Googlebot named BLOCK (sanity): {google_block}")
     return 0
 

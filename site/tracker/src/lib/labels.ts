@@ -5,6 +5,7 @@ export const PURPOSE_LABELS: Record<string, string> = {
   opt_out_token: "Opt-out signal",
   agentic: "Autonomous agent",
   unknown: "Unclear",
+  blanket: "Block all bots",
 };
 
 export const STATE_LABELS: Record<string, string> = {
@@ -12,6 +13,9 @@ export const STATE_LABELS: Record<string, string> = {
   ALLOWED: "Allowed",
   PARTIAL: "Mixed",
 };
+
+export const BLANKET_SLUG = "wildcard-star";
+export const BLANKET_TOKEN = "All bots (*)";
 
 export function purposeLabel(value: string | undefined | null): string {
   if (!value) return "—";
