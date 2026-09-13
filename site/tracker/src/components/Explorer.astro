@@ -278,12 +278,12 @@ const payload = JSON.stringify({
       const total = source.length;
       domainCount.textContent =
         total === 0
-          ? "The website list is not in this preview yet. Totals above are already live."
+          ? "Website-by-website rows stay off this page at this list size. Totals above are live."
           : `Showing ${rows.length} of ${total} website rules`;
       if (rows.length === 0) {
         domainBody.innerHTML = `<tr><td colspan="5" class="empty-cell">${
           total === 0
-            ? "Site-by-site rows will appear after the next data refresh."
+            ? "Site-by-site rows are not loaded in the browser for this list size."
             : "Nothing matches these filters. Try All bots, or clear the website search."
         }</td></tr>`;
         return;

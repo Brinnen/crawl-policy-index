@@ -3,6 +3,7 @@
 
     python panel/build_panel.py --version tranco1000 --tranco-top 1000 --tranco-id 94XL2
     python panel/build_panel.py --version sites1000 --tranco-top 3000 --keep 1000 --drop-infra --tranco-id 94XL2
+    python panel/build_panel.py --version sites100k --tranco-top 150000 --keep 100000 --drop-infra --tranco-id 94XL2
     python panel/build_panel.py --version dev --sample 5000 --seed 42
 """
 

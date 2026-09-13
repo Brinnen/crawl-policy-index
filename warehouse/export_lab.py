@@ -38,6 +38,8 @@ SELECT
     a.purpose::text
 FROM policy_interval pi
 JOIN agent a ON a.slug = pi.agent_slug
+JOIN panel_domain pd
+  ON pd.domain = pi.domain AND pd.panel_version = %s
 WHERE pi.valid_to IS NULL
 ORDER BY pi.domain, a.operator, a.slug
 """
@@ -56,6 +58,8 @@ FROM agent a
 JOIN policy_interval pi
   ON pi.agent_slug = a.slug
  AND pi.valid_to IS NULL
+JOIN panel_domain pd
+  ON pd.domain = pi.domain AND pd.panel_version = %s
 GROUP BY a.slug, a.ua_token, a.display_name, a.operator, a.purpose
 ORDER BY count(*) FILTER (WHERE pi.state = 'BLOCKED') DESC, a.operator, a.slug
 """
@@ -65,38 +69,82 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--out", default=str(OUT))
     p.add_argument("--dsn", default=None)
+    p.add_argument("--panel-version", default="sites1000")
     args = p.parse_args(argv)
+    panel = args.panel_version
 
     import psycopg
 
     dsn = args.dsn or database_dsn()
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT count(*) FROM fetch_observation WHERE resource = 'robots_txt'")
+            cur.execute(
+                "SELECT domain_count FROM panel_version WHERE version = %s",
+                (panel,),
+            )
+            row = cur.fetchone()
+            panel_size = int(row[0]) if row else 0
+            cur.execute(
+                """
+                SELECT count(*)
+                FROM fetch_observation fo
+                JOIN panel_domain pd
+                  ON pd.domain = fo.domain AND pd.panel_version = %s
+                WHERE fo.resource = 'robots_txt'
+                """,
+                (panel,),
+            )
             obs = cur.fetchone()[0]
-            cur.execute("SELECT count(*) FROM wildcard_interval WHERE valid_to IS NULL")
+            cur.execute(
+                """
+                SELECT count(*)
+                FROM wildcard_interval wi
+                JOIN panel_domain pd
+                  ON pd.domain = wi.domain AND pd.panel_version = %s
+                WHERE wi.valid_to IS NULL
+                """,
+                (panel,),
+            )
             wild = cur.fetchone()[0]
             cur.execute(
                 """
                 SELECT
-                    count(*) FILTER (WHERE state = 'BLOCKED'),
-                    count(*) FILTER (WHERE state = 'ALLOWED'),
-                    count(*) FILTER (WHERE state = 'PARTIAL')
-                FROM v_lab_gptbot_named
-                """
+                    count(*) FILTER (WHERE n.state = 'BLOCKED'),
+                    count(*) FILTER (WHERE n.state = 'ALLOWED'),
+                    count(*) FILTER (WHERE n.state = 'PARTIAL')
+                FROM v_lab_gptbot_named n
+                JOIN panel_domain pd
+                  ON pd.domain = n.domain AND pd.panel_version = %s
+                """,
+                (panel,),
             )
             named_block, named_allow, named_partial = cur.fetchone()
             cur.execute(
                 """
                 SELECT count(*) FILTER (WHERE named_block_rows > 0)
-                FROM v_lab_gptbot_named_grouped
-                """
+                FROM (
+                    SELECT
+                        CASE
+                            WHEN n.domain = 'amazon.com' OR n.domain LIKE 'amazon.%%'
+                            THEN 'amazon.com'
+                            ELSE n.domain
+                        END AS group_key,
+                        count(*) FILTER (WHERE n.state = 'BLOCKED') AS named_block_rows
+                    FROM v_lab_gptbot_named n
+                    JOIN panel_domain pd
+                      ON pd.domain = n.domain AND pd.panel_version = %s
+                    GROUP BY 1
+                ) g
+                """,
+                (panel,),
             )
             grouped_block = cur.fetchone()[0]
             cur.execute(
                 """
                 SELECT count(*)
                 FROM policy_interval gpt
+                JOIN panel_domain pd
+                  ON pd.domain = gpt.domain AND pd.panel_version = %s
                 LEFT JOIN policy_interval search
                   ON search.domain = gpt.domain
                  AND search.valid_to IS NULL
@@ -105,35 +153,44 @@ def main(argv: list[str] | None = None) -> int:
                   AND gpt.valid_to IS NULL
                   AND gpt.state = 'BLOCKED'
                   AND COALESCE(search.state::text, '') IS DISTINCT FROM 'BLOCKED'
-                """
+                """,
+                (panel,),
             )
             split = cur.fetchone()[0]
             cur.execute(
                 """
                 SELECT count(*)
-                FROM policy_interval
-                WHERE agent_slug = 'google-googlebot'
-                  AND state = 'BLOCKED'
-                  AND valid_to IS NULL
-                """
+                FROM policy_interval pi
+                JOIN panel_domain pd
+                  ON pd.domain = pi.domain AND pd.panel_version = %s
+                WHERE pi.agent_slug = 'google-googlebot'
+                  AND pi.state = 'BLOCKED'
+                  AND pi.valid_to IS NULL
+                """,
+                (panel,),
             )
             google_block = cur.fetchone()[0]
             cur.execute(
                 """
                 SELECT
-                    count(*) FILTER (WHERE state = 'BLOCKED'),
-                    count(*) FILTER (WHERE state = 'ALLOWED'),
-                    count(*) FILTER (WHERE state = 'PARTIAL')
-                FROM wildcard_interval
-                WHERE valid_to IS NULL
-                  AND has_wildcard_group
-                """
+                    count(*) FILTER (WHERE wi.state = 'BLOCKED'),
+                    count(*) FILTER (WHERE wi.state = 'ALLOWED'),
+                    count(*) FILTER (WHERE wi.state = 'PARTIAL')
+                FROM wildcard_interval wi
+                JOIN panel_domain pd
+                  ON pd.domain = wi.domain AND pd.panel_version = %s
+                WHERE wi.valid_to IS NULL
+                  AND wi.has_wildcard_group
+                """,
+                (panel,),
             )
             wc_block, wc_allow, wc_partial = cur.fetchone()
             cur.execute(
                 """
                 SELECT count(*)
                 FROM wildcard_interval wi
+                JOIN panel_domain pd
+                  ON pd.domain = wi.domain AND pd.panel_version = %s
                 WHERE wi.valid_to IS NULL
                   AND wi.has_wildcard_group
                   AND wi.state = 'BLOCKED'
@@ -144,26 +201,77 @@ def main(argv: list[str] | None = None) -> int:
                       AND pi.agent_slug = 'openai-gptbot'
                       AND pi.valid_to IS NULL
                   )
-                """
+                """,
+                (panel,),
             )
             gptbot_blanket = cur.fetchone()[0]
-            cur.execute(NAMED_SQL)
-            named = [
-                {
-                    "domain": domain,
-                    "state": state,
-                    "valid_from": vf,
-                    "agent_slug": slug,
-                    "token": token,
-                    "agent": display,
-                    "operator": operator,
-                    "purpose": purpose,
-                    "kind": "named",
-                    "group_key": group_key(domain),
-                }
-                for domain, state, vf, slug, token, display, operator, purpose in cur.fetchall()
-            ]
-            cur.execute(BY_AGENT_SQL)
+            include_rows = panel_size <= 5000
+            named: list[dict] = []
+            blanket: list[dict] = []
+            grouped: list[dict] = []
+            if include_rows:
+                cur.execute(NAMED_SQL, (panel,))
+                named = [
+                    {
+                        "domain": domain,
+                        "state": state,
+                        "valid_from": vf,
+                        "agent_slug": slug,
+                        "token": token,
+                        "agent": display,
+                        "operator": operator,
+                        "purpose": purpose,
+                        "kind": "named",
+                        "group_key": group_key(domain),
+                    }
+                    for domain, state, vf, slug, token, display, operator, purpose in cur.fetchall()
+                ]
+                cur.execute(
+                    """
+                    SELECT group_key, domain_rows, named_block_rows, named_allow_rows, named_partial_rows
+                    FROM v_lab_gptbot_named_grouped
+                    ORDER BY named_block_rows DESC, group_key
+                    """
+                )
+                grouped = [
+                    {
+                        "group_key": g,
+                        "domain_rows": dr,
+                        "named_block_rows": nb,
+                        "named_allow_rows": na,
+                        "named_partial_rows": np,
+                    }
+                    for g, dr, nb, na, np in cur.fetchall()
+                ]
+                cur.execute(
+                    """
+                    SELECT wi.domain, wi.state::text, wi.valid_from::text
+                    FROM wildcard_interval wi
+                    JOIN panel_domain pd
+                      ON pd.domain = wi.domain AND pd.panel_version = %s
+                    WHERE wi.valid_to IS NULL
+                      AND wi.has_wildcard_group
+                      AND wi.state = 'BLOCKED'
+                    ORDER BY wi.domain
+                    """,
+                    (panel,),
+                )
+                blanket = [
+                    {
+                        "domain": domain,
+                        "state": state,
+                        "valid_from": vf,
+                        "agent_slug": "wildcard-star",
+                        "token": "All bots (*)",
+                        "agent": "All bots",
+                        "operator": "Site-wide rule",
+                        "purpose": "blanket",
+                        "kind": "blanket",
+                        "group_key": group_key(domain),
+                    }
+                    for domain, state, vf in cur.fetchall()
+                ]
+            cur.execute(BY_AGENT_SQL, (panel,))
             by_agent = [
                 {
                     "slug": slug,
@@ -176,48 +284,6 @@ def main(argv: list[str] | None = None) -> int:
                     "named_partial": partial,
                 }
                 for slug, token, display, operator, purpose, block, allow, partial in cur.fetchall()
-            ]
-            cur.execute(
-                """
-                SELECT group_key, domain_rows, named_block_rows, named_allow_rows, named_partial_rows
-                FROM v_lab_gptbot_named_grouped
-                ORDER BY named_block_rows DESC, group_key
-                """
-            )
-            grouped = [
-                {
-                    "group_key": g,
-                    "domain_rows": dr,
-                    "named_block_rows": nb,
-                    "named_allow_rows": na,
-                    "named_partial_rows": np,
-                }
-                for g, dr, nb, na, np in cur.fetchall()
-            ]
-            cur.execute(
-                """
-                SELECT domain, state::text, valid_from::text
-                FROM wildcard_interval
-                WHERE valid_to IS NULL
-                  AND has_wildcard_group
-                  AND state = 'BLOCKED'
-                ORDER BY domain
-                """
-            )
-            blanket = [
-                {
-                    "domain": domain,
-                    "state": state,
-                    "valid_from": vf,
-                    "agent_slug": "wildcard-star",
-                    "token": "All bots (*)",
-                    "agent": "All bots",
-                    "operator": "Site-wide rule",
-                    "purpose": "blanket",
-                    "kind": "blanket",
-                    "group_key": group_key(domain),
-                }
-                for domain, state, vf in cur.fetchall()
             ]
 
     by_agent.insert(
@@ -235,7 +301,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     payload = {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "panel_version": "sites1000",
+        "panel_version": panel,
         "parse_version": "1.0.0",
         "view": "policy_interval",
         "lab": True,
@@ -250,6 +316,7 @@ def main(argv: list[str] | None = None) -> int:
             "openai_split": split,
             "googlebot_named_block": google_block,
             "calendar_observations": obs,
+            "panel_size": panel_size,
         },
         "by_agent": by_agent,
         "named": named,
@@ -260,7 +327,8 @@ def main(argv: list[str] | None = None) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     print(
-        f"wrote {out} ({len(named)} named rows, {len(blanket)} block-all-bots, {len(by_agent)} agents)"
+        f"wrote {out} panel={panel} size={panel_size} "
+        f"({len(named)} named rows, {len(blanket)} block-all-bots, {len(by_agent)} agents)"
     )
     return 0
 

@@ -17,6 +17,14 @@ set -a
 source "$ROOT/.env"
 set +a
 
+PANEL="${CPI_PANEL:-sites1000}"
+CSV="$ROOT/data/panel-${PANEL}.csv"
+MANIFEST="$ROOT/data/panel-${PANEL}.manifest.json"
+if [[ ! -f "$CSV" || ! -f "$MANIFEST" ]]; then
+  echo "missing panel $CSV — run: bash $ROOT/scripts/setup-sites100k.sh"
+  exit 1
+fi
+
 # shellcheck disable=SC1091
 source "$ROOT/.venv/bin/activate"
 export PYTHONPATH="$ROOT/parser:$ROOT/warehouse:$ROOT/warehouse/load"
@@ -27,16 +35,18 @@ python3 "$ROOT/warehouse/migrations/apply.py"
 echo "Loading agents..."
 python3 "$ROOT/warehouse/load/load_agents.py"
 
-echo "Loading panel..."
+echo "Loading panel ${PANEL}..."
 python3 "$ROOT/warehouse/load/load_panel.py" \
-  --csv "$ROOT/data/panel-sites1000.csv" \
-  --manifest "$ROOT/data/panel-sites1000.manifest.json"
+  --csv "$CSV" \
+  --manifest "$MANIFEST"
 
 echo "Loading observations..."
 python3 "$ROOT/warehouse/load/load_observations.py" --store "$ROOT/data/store"
 
-echo "Deriving robots.txt intervals..."
-python3 "$ROOT/warehouse/derive/derive_robots.py" --store "$ROOT/data/store"
+echo "Deriving robots.txt intervals for ${PANEL}..."
+python3 "$ROOT/warehouse/derive/derive_robots.py" \
+  --store "$ROOT/data/store" \
+  --panel-version "$PANEL"
 
 echo ""
 python3 "$ROOT/warehouse/query_lab.py"

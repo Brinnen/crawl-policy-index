@@ -57,6 +57,12 @@ function purpose(value: string | undefined) {
 
 function applySummary(lab: LabSnapshot) {
   const s = lab.summary || {};
+  if (s.panel_size != null) {
+    const label = fmt(Number(s.panel_size));
+    document.querySelectorAll("[data-panel-size]").forEach((el) => {
+      el.textContent = label;
+    });
+  }
   document.querySelectorAll<HTMLElement>("[data-stat]").forEach((el) => {
     const key = el.dataset.stat;
     if (!key || s[key] == null) return;
@@ -174,7 +180,7 @@ function applyDomainPage(lab: LabSnapshot) {
   const blanket = lab.blanket || [];
   const rows = [...named, ...blanket].filter((row) => row.domain === domain);
   if (rows.length === 0) {
-    body.innerHTML = `<tr><td colspan="5" class="empty-cell">No named bot rule for this website in the current 1,000-site test.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5" class="empty-cell">No named bot rule for this website in the current test list.</td></tr>`;
     return;
   }
   body.innerHTML = rows

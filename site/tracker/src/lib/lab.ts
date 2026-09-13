@@ -8,6 +8,7 @@ export type LabSummary = {
   openai_split: number;
   googlebot_named_block: number;
   calendar_observations: number;
+  panel_size?: number;
 };
 
 export type NamedRow = {

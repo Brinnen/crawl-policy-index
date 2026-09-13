@@ -90,8 +90,11 @@ def main(argv: list[str] | None = None) -> int:
                     "checksum_sha256": man.get("checksum_sha256") or "",
                 },
             )
-            for row in rows:
-                cur.execute(UPSERT_DOMAIN, row)
+            batch = 2000
+            for i in range(0, len(rows), batch):
+                cur.executemany(UPSERT_DOMAIN, rows[i : i + batch])
+                if i and i % 20000 == 0:
+                    print(f"  … {i} / {len(rows)} domains")
         conn.commit()
     print(f"loaded panel {man['version']} ({len(rows)} domains)")
     return 0

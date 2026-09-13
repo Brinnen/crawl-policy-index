@@ -22,4 +22,12 @@ cd /root/crawl-policy-index && git pull && bash scripts/setup-daily.sh
 
 That installs a 02:00 UTC job: fetch → warehouse → export → publish the snapshot. Overview and Explore update from that URL. No manual export or commit.
 
+To move the daily job from 1,000 to 100,000 sites:
+
+```bash
+cd /root/crawl-policy-index && git pull && bash scripts/setup-sites100k.sh
+```
+
+That is still a test list, not the web. Site-by-site explorer rows stay off the public snapshot at that size; totals and the by-bot table update.
+
 Optional: put `GITHUB_TOKEN` in `/root/crawl-policy-index/.env` so the job also commits `lab.json` and Vercel rebuilds.

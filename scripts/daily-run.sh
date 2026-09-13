@@ -8,6 +8,13 @@ export PATH="/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
 ROOT="${CPI_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 cd "$ROOT"
 
+if [[ -f "$ROOT/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT/.env"
+  set +a
+fi
+
 mkdir -p "$ROOT/data/logs"
 log="$ROOT/data/logs/daily.log"
 
@@ -31,7 +38,7 @@ fi
   bash "$ROOT/scripts/warehouse-once.sh"
   # shellcheck disable=SC1091
   source "$ROOT/.venv/bin/activate"
-  python3 "$ROOT/warehouse/export_lab.py"
+  python3 "$ROOT/warehouse/export_lab.py" --panel-version "${CPI_PANEL:-sites1000}"
   bash "$ROOT/scripts/publish-lab.sh"
 
   date -u +%Y-%m-%dT%H:%M:%SZ >"$ROOT/data/logs/last-ok"

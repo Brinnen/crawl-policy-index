@@ -22,11 +22,13 @@ from cpi_parser.state import RuleSource, derive_agent, derive_wildcard  # noqa: 
 from warehouse.dsn import database_dsn  # noqa: E402
 
 OBS_SQL = """
-SELECT domain, run_date, content_sha256, outcome, content_type
-FROM fetch_observation
-WHERE resource = 'robots_txt'
-  AND panel_version = %s
-ORDER BY domain, run_date;
+SELECT fo.domain, fo.run_date, fo.content_sha256, fo.outcome, fo.content_type
+FROM fetch_observation fo
+JOIN panel_domain pd
+  ON pd.domain = fo.domain
+ AND pd.panel_version = %s
+WHERE fo.resource = 'robots_txt'
+ORDER BY fo.domain, fo.run_date;
 """
 
 

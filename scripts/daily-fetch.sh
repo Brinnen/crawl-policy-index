@@ -1,17 +1,34 @@
 #!/usr/bin/env bash
-# Daily sites1000 robots.txt fetch. Called by scripts/daily-run.sh (the cron job).
+# Daily robots.txt fetch for the active panel (CPI_PANEL). Called by daily-run.sh.
 # Uses UTC today's date. Safe to re-run the same day: completed pairs are skipped.
 set -euo pipefail
 
 ROOT="${CPI_ROOT:-/root/crawl-policy-index}"
+cd "$ROOT"
+
+if [[ -f "$ROOT/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT/.env"
+  set +a
+fi
+
+PANEL="${CPI_PANEL:-sites1000}"
+CONFIG="$ROOT/config/droplet-${PANEL}.yml"
+CSV="$ROOT/data/panel-${PANEL}.csv"
+
 cd "$ROOT/fetcher"
 
 if [[ ! -x ./cpifetch ]]; then
   echo "missing $ROOT/fetcher/cpifetch — run: bash $ROOT/scripts/setup-droplet.sh" >&2
   exit 1
 fi
-if [[ ! -f "$ROOT/data/panel-sites1000.csv" ]]; then
-  echo "missing panel $ROOT/data/panel-sites1000.csv" >&2
+if [[ ! -f "$CONFIG" ]]; then
+  echo "missing config $CONFIG" >&2
+  exit 1
+fi
+if [[ ! -f "$CSV" ]]; then
+  echo "missing panel $CSV — run: bash $ROOT/scripts/setup-sites100k.sh" >&2
   exit 1
 fi
 
@@ -25,10 +42,10 @@ elif ! flock -n 9; then
 fi
 log="$ROOT/data/logs/fetch.log"
 {
-  echo "---- $(date -u +%Y-%m-%dT%H:%M:%SZ) start ----"
+  echo "---- $(date -u +%Y-%m-%dT%H:%M:%SZ) start panel=${PANEL} ----"
   ./cpifetch \
-    --config ../config/droplet-sites1000.yml \
-    --panel ../data/panel-sites1000.csv \
+    --config "$CONFIG" \
+    --panel "$CSV" \
     --once
-  echo "---- $(date -u +%Y-%m-%dT%H:%M:%SZ) end ----"
+  echo "---- $(date -u +%Y-%m-%dT%H:%M:%SZ) end panel=${PANEL} ----"
 } >>"$log" 2>&1

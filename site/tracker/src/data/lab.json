@@ -14,7 +14,8 @@
     "gptbot_blanket_block": null,
     "openai_split": 56,
     "googlebot_named_block": 2,
-    "calendar_observations": 2008
+    "calendar_observations": 2008,
+    "panel_size": 1000
   },
   "by_agent": [
     {

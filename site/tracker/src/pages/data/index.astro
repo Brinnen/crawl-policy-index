@@ -7,6 +7,7 @@ import lab from "../../data/lab.json";
 const agents = lab.by_agent ?? [];
 const named = lab.named ?? [];
 const blanket = lab.blanket ?? [];
+const panelSize = Number(lab.summary.panel_size || 1000).toLocaleString("en-US");
 ---
 <Layout
   title="Explore — Crawl Policy Index"
@@ -18,7 +19,7 @@ const blanket = lab.blanket ?? [];
   </div>
   <p class="lede">
     Filter the tables. Named bots sit next to sites that only said “block all bots.”
-    This is a 1,000-site test list — not the whole internet.
+    This is a <span data-panel-size>{panelSize}</span>-site test list — not the whole internet.
   </p>
   <Explorer agents={agents} named={named} blanket={blanket} />
   <Glossary />

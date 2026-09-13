@@ -1,6 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import lab from "../data/lab.json";
+
+const panelSize = Number(lab.summary.panel_size || 1000).toLocaleString("en-US");
 ---
 <Layout
   title="How we count — Crawl Policy Index"
@@ -19,7 +21,7 @@ import lab from "../data/lab.json";
 
     <h2>In one minute</h2>
     <ul>
-      <li>We look at a fixed list of 1,000 websites (a test list, not “the web”).</li>
+      <li>We look at a fixed list of <span data-panel-size>{panelSize}</span> websites (a test list, not “the web”).</li>
       <li>Once a day we fetch each site’s public crawl rules.</li>
       <li>We record whether the site named a bot such as GPTBot or ClaudeBot, and whether it allowed, blocked, or mixed that bot.</li>
       <li>If the site never named the bot but said “block all bots,” we still count it — and we label it as that blanket policy, not as a named decision.</li>
@@ -54,7 +56,7 @@ import lab from "../data/lab.json";
 
     <h2>Why you should not write “the web”</h2>
     <p>
-      These figures come from a test list of 1,000 well-known sites, snapshot
+      These figures come from a test list of <span data-panel-size>{panelSize}</span> well-known sites, snapshot
       {lab.generated_at.slice(0, 10)}. The bot names have not finished a human
       double-check against each company’s own documentation. Treat this as a lab preview,
       not a published finding, and not a percentage of the internet.
