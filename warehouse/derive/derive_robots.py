@@ -60,15 +60,31 @@ def main(argv: list[str] | None = None) -> int:
         parsed_cache: dict[str, dict] = {}
         with conn.cursor() as cur:
             for sha in shas:
-                parsed_cache[sha] = _parse_blob(cur, store, sha)
+                try:
+                    parsed_cache[sha] = _parse_blob(cur, store, sha)
+                except Exception as exc:
+                    print(f"WARNING: blob {sha[:12]} parse failed: {exc}", file=sys.stderr)
+                    parsed_cache[sha] = {"verdict": "empty", "body": b""}
 
         domains = 0
+        failed = 0
         with conn.cursor() as cur:
             for domain, series in by_domain.items():
-                _derive_domain(cur, domain, series, parsed_cache, tokens)
+                cur.execute("SAVEPOINT derive_domain")
+                try:
+                    _derive_domain(cur, domain, series, parsed_cache, tokens)
+                    cur.execute("RELEASE SAVEPOINT derive_domain")
+                except Exception as exc:
+                    cur.execute("ROLLBACK TO SAVEPOINT derive_domain")
+                    failed += 1
+                    print(f"WARNING: derive skipped {domain}: {exc}", file=sys.stderr)
                 domains += 1
+                if domains % 10000 == 0:
+                    print(f"  … derived {domains} / {len(by_domain)}")
         conn.commit()
-    print(f"derived {domains} domains at parse_version={PARSE_VERSION}")
+    print(
+        f"derived {domains} domains ({failed} skipped) at parse_version={PARSE_VERSION}"
+    )
     return 0
 
 
@@ -221,7 +237,7 @@ def _apply_explicit(cur, domain, as_of, sha, desired: dict) -> None:
     for slug, pol in desired.items():
         state = str(pol.state)
         token = pol.matched_ua_token
-        delay = pol.crawl_delay_s
+        delay = _crawl_delay_column(pol.crawl_delay_s)
         if slug not in open_rows:
             cur.execute(
                 """
@@ -263,6 +279,25 @@ def _apply_explicit(cur, domain, as_of, sha, desired: dict) -> None:
         )
         kind = _transition(row[2], state)
         _event(cur, domain, slug, as_of, kind, row[2], state, row[3], sha)
+
+
+def _crawl_delay_column(value: float | None) -> float | None:
+    """Fit Crawl-delay into policy_interval.crawl_delay_s numeric(8,2).
+
+    Junk values (1e12, NaN, negative) are stored as NULL. The named
+    allow/block/partial still counts.
+    """
+    if value is None:
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if number != number or number in (float("inf"), float("-inf")) or number < 0:
+        return None
+    if number > 999_999.99:
+        return None
+    return round(number, 2)
 
 
 def _transition(old: str, new: str) -> str:
