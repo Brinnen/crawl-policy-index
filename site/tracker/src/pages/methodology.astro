@@ -54,6 +54,24 @@ const panelSize = Number(lab.summary.panel_size || 1000).toLocaleString("en-US")
       as permission.
     </p>
 
+    <h2>The file we were served — not Google’s copy</h2>
+    <p>
+      We fetch as ourselves: <strong>CrawlPolicyIndex/1.0</strong>, from our published
+      address, once a day. We record the robots.txt that server sent <em>us</em>.
+    </p>
+    <p>
+      Some sites send a different file to crawlers they have verified by IP — Googlebot
+      is the usual example — and a stricter fallback to everyone else. We do not pretend
+      to be Googlebot. We do not guess the private copy. A site can block us, and every
+      unverified bot, while still appearing in Google. That is not a contradiction in
+      these tables. It is a two-channel policy, and we only see one channel.
+    </p>
+    <p>
+      So “blocked GPTBot” here means: <strong>the public rules file we were given named
+      GPTBot and said no</strong> — or said “block all bots.” It does not mean we watched
+      GPTBot being refused at the door.
+    </p>
+
     <h2>Why you should not write “the web”</h2>
     <p>
       These figures come from a test list of <span data-panel-size>{panelSize}</span> well-known sites, snapshot
@@ -82,8 +100,11 @@ const panelSize = Number(lab.summary.panel_size || 1000).toLocaleString("en-US")
 
     <h2>Googlebot is a sanity check</h2>
     <p>
-      Almost no serious site blocks Google’s main search crawler. If our tables ever showed
-      a large share doing that, the bug would be in our reading, not in the web.
+      Almost no serious site wants to disappear from Google. If our tables showed a large
+      share naming Googlebot and blocking it, first ask whether we are looking at the
+      public fallback file — the one served to unverified visitors — not whether Google
+      itself is locked out. A jump in that number is a reason to inspect the files, not
+      to write “the web blocked Google.”
     </p>
 
     <h2>Keeping the record honest</h2>

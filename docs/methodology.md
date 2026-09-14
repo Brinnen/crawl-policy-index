@@ -23,6 +23,10 @@ A domain with no trustworthy robots.txt observation is absent from the function'
 
 `EXPLICIT` and `WILDCARD` blocks are never conflated in a headline. An explicit block is a deliberate decision; a wildcard block is collateral.
 
+## Observer identity
+
+Figures are of the robots.txt **served to CrawlPolicyIndex/1.0 from the published fetch addresses**. They are not the file a verified search crawler may receive after IP / reverse-DNS checks. Spoofing another operator's user-agent or address is out of scope. Per-crawler variants, WAF interstitials, and signed-agent protocols are recorded only insofar as they change what we were sent (including `forbidden` / not-robots detect verdicts). They are not inferred.
+
 ## Tokens that are not crawlers
 
 `Google-Extended`, `Applebot-Extended`, and other `opt_out_token` entries are control signals. They are never summed into crawler-blocking rates.
