@@ -59,7 +59,8 @@ def main(argv: list[str] | None = None) -> int:
     if any(r["verified"] for r in rows):
         print("warning: verified=true present; confirm each token against operator docs", file=sys.stderr)
     if args.dry_run:
-        print(f"{len(rows)} agents, all unverified={all(not r['verified'] for r in rows)}")
+        n_verified = sum(1 for r in rows if r["verified"])
+        print(f"{len(rows)} agents, verified={n_verified}")
         return 0
     import psycopg
 

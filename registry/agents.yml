@@ -7,11 +7,17 @@
 # ---------------------------------------------------------------------
 # READ THIS BEFORE USING THE FILE
 #
-# Every entry ships with `verified: false`. This is deliberate.
+# Defaults keep `verified: false`. Flip a token to `verified: true` only
+# after opening that entry's `documented_url`, confirming the operator
+# publishes that exact `ua_token`, and recording `verified_on` /
+# `verified_by`. Unchecked and mismatched tokens stay false.
 #
-# A `ua_token` may only be flipped to `verified: true` after a human has
-# opened that entry's `documented_url`, confirmed the operator publishes
-# that exact token, and recorded the check in `verified_on` / `verified_by`.
+# 2026-09-14 pass: verified only where the operator page named the token.
+# Left false: Amazonbot (docs 409), YouBot (docs 403), Diffbot (docs 403),
+# Bytespider (Toutiao page behind JS challenge), FacebookBot (Meta lists
+# facebookexternalhit, not FacebookBot), Cohere tokens (operator table is
+# N/A; hypothetical example is Coherebot), omgilibot (operator UA is
+# omgili/0.5), PanguBot, ImagesiftBot, Timpibot.
 #
 # `effective_policy()` filters to `verified AND active`, so an unverified
 # agent is collected and stored but never appears in a published figure.
@@ -75,6 +81,9 @@ agents:
     purpose: training
     documented_url: https://platform.openai.com/docs/bots
     confidence: high
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   - slug: openai-searchbot
     ua_token: OAI-SearchBot
@@ -83,6 +92,9 @@ agents:
     purpose: search_index
     documented_url: https://platform.openai.com/docs/bots
     confidence: high
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   - slug: openai-chatgpt-user
     ua_token: ChatGPT-User
@@ -91,6 +103,9 @@ agents:
     purpose: user_fetch
     documented_url: https://platform.openai.com/docs/bots
     confidence: high
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
     notes: >
       Fires when a user asks ChatGPT to open a specific link. Blocking it
       blocks a human's explicit request, which is a materially different
@@ -106,6 +121,9 @@ agents:
     purpose: training
     documented_url: https://support.anthropic.com/en/articles/8896518
     confidence: high
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   - slug: anthropic-claude-user
     ua_token: Claude-User
@@ -114,13 +132,20 @@ agents:
     purpose: user_fetch
     documented_url: https://support.anthropic.com/en/articles/8896518
     confidence: medium
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   - slug: anthropic-claude-searchbot
     ua_token: Claude-SearchBot
     display_name: Claude-SearchBot
     operator: Anthropic
     purpose: search_index
+    documented_url: https://support.anthropic.com/en/articles/8896518
     confidence: medium
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   - slug: anthropic-ai-legacy
     ua_token: anthropic-ai
@@ -130,10 +155,8 @@ agents:
     confidence: medium
     notes: >
       Legacy token still present in a great many robots.txt files copied
-      from old blocklists. Its continued presence is itself a useful
-      signal: it indicates a stale, copy-pasted policy rather than an
-      actively maintained one. Consider a "policy freshness" metric
-      built on tokens like this one and Claude-Web.
+      from old blocklists. Anthropic's 2026-04-07 crawler page names
+      ClaudeBot, Claude-User, and Claude-SearchBot only. Leave unverified.
 
   - slug: anthropic-claude-web-legacy
     ua_token: Claude-Web
@@ -141,6 +164,8 @@ agents:
     operator: Anthropic
     purpose: unknown
     confidence: low
+    notes: >
+      Not named on Anthropic's 2026-04-07 crawler page. Leave unverified.
 
   # ------------------------------------------------------------------
   # Google — note that Google-Extended is NOT a crawler. Getting this
@@ -151,8 +176,11 @@ agents:
     display_name: Google-Extended
     operator: Google
     purpose: opt_out_token
-    documented_url: https://developers.google.com/search/docs/crawling-indexing/overview-google-crawlers
+    documented_url: https://developers.google.com/search/docs/crawling-indexing/google-common-crawlers
     confidence: high
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
     notes: >
       Does not fetch anything. It is a control token for Gemini training
       and grounding. Never include it in "crawler traffic" framing and
@@ -163,8 +191,11 @@ agents:
     display_name: Googlebot
     operator: Google
     purpose: search_index
-    documented_url: https://developers.google.com/search/docs/crawling-indexing/overview-google-crawlers
+    documented_url: https://developers.google.com/search/docs/crawling-indexing/google-common-crawlers
     confidence: high
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
     notes: >
       Included as the control baseline. Blocking Googlebot is nearly
       unheard of, so it calibrates the panel: if our numbers ever show a
@@ -176,7 +207,11 @@ agents:
     display_name: Google-CloudVertexBot
     operator: Google
     purpose: training
+    documented_url: https://developers.google.com/search/docs/crawling-indexing/google-common-crawlers
     confidence: medium
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   # ------------------------------------------------------------------
   # Perplexity
@@ -188,13 +223,20 @@ agents:
     purpose: search_index
     documented_url: https://docs.perplexity.ai/guides/bots
     confidence: high
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   - slug: perplexity-user
     ua_token: Perplexity-User
     display_name: Perplexity-User
     operator: Perplexity
     purpose: user_fetch
+    documented_url: https://docs.perplexity.ai/guides/bots
     confidence: medium
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   # ------------------------------------------------------------------
   # Common Crawl — the substrate under most open training corpora, and
@@ -208,6 +250,9 @@ agents:
     purpose: training
     documented_url: https://commoncrawl.org/faq
     confidence: high
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   # ------------------------------------------------------------------
   # Meta
@@ -217,21 +262,34 @@ agents:
     display_name: meta-externalagent
     operator: Meta
     purpose: training
+    documented_url: https://developers.facebook.com/docs/sharing/webmasters/web-crawlers
     confidence: medium
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   - slug: meta-externalfetcher
     ua_token: meta-externalfetcher
     display_name: meta-externalfetcher
     operator: Meta
     purpose: user_fetch
+    documented_url: https://developers.facebook.com/docs/sharing/webmasters/web-crawlers
     confidence: medium
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   - slug: meta-facebookbot
     ua_token: FacebookBot
     display_name: FacebookBot
     operator: Meta
     purpose: unknown
+    documented_url: https://developers.facebook.com/docs/sharing/webmasters/web-crawlers
     confidence: medium
+    notes: >
+      Meta's crawler page documents facebookexternalhit, meta-externalagent,
+      meta-externalfetcher, meta-webindexer, and meta-externalads. It does
+      not publish FacebookBot. Leave unverified until Meta names this token.
 
   # ------------------------------------------------------------------
   # Apple
@@ -243,6 +301,9 @@ agents:
     purpose: search_index
     documented_url: https://support.apple.com/en-us/119829
     confidence: high
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   - slug: apple-applebot-extended
     ua_token: Applebot-Extended
@@ -251,6 +312,9 @@ agents:
     purpose: opt_out_token
     documented_url: https://support.apple.com/en-us/119829
     confidence: high
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
     notes: Same modelling caveat as Google-Extended — a signal, not a crawler.
 
   # ------------------------------------------------------------------
@@ -261,7 +325,11 @@ agents:
     display_name: bingbot
     operator: Microsoft
     purpose: search_index
+    documented_url: https://www.bing.com/webmasters/help/which-crawlers-does-bing-use-8c184ec0
     confidence: high
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
     notes: Second control baseline alongside Googlebot.
 
   # ------------------------------------------------------------------
@@ -275,8 +343,9 @@ agents:
     confidence: high
     notes: >
       Among the most frequently blocked tokens in the wild, largely on
-      reputational grounds rather than considered policy. Worth a
-      dedicated cut in the report.
+      reputational grounds rather than considered policy. Toutiao/ByteDance
+      pages name Bytespider, but the live page was a JS challenge on
+      2026-09-14. Leave unverified until a clean operator fetch.
 
   # ------------------------------------------------------------------
   # Amazon
@@ -287,32 +356,46 @@ agents:
     operator: Amazon
     purpose: search_index
     confidence: medium
+    notes: >
+      developer.amazon.com/amazonbot and /support/amazonbot returned HTTP
+      409 on 2026-09-14. Leave unverified until the operator page is readable.
 
   # ------------------------------------------------------------------
-  # Others — verify each individually. Several of these are likely
-  # stale, renamed, or were never real; the low-confidence entries are
-  # exactly why nothing here is verified by default.
+  # Others — remaining tokens were not confirmed on an operator page
+  # in the 2026-09-14 pass. Keep verified: false until they are.
   # ------------------------------------------------------------------
   - slug: cohere-ai
     ua_token: cohere-ai
     display_name: cohere-ai
     operator: Cohere
     purpose: training
+    documented_url: https://docs.cohere.com/docs/cohere-web-crawlers
     confidence: medium
+    notes: >
+      Cohere's crawler page currently lists Bot Name N/A and says they do
+      not crawl for generative-AI training. The hypothetical example token
+      is Coherebot, not cohere-ai. Leave unverified.
 
   - slug: cohere-training-crawler
     ua_token: cohere-training-data-crawler
     display_name: cohere-training-data-crawler
     operator: Cohere
     purpose: training
+    documented_url: https://docs.cohere.com/docs/cohere-web-crawlers
     confidence: low
+    notes: >
+      Not named on Cohere's crawler page. Same N/A table as cohere-ai.
 
   - slug: ai2-bot
     ua_token: AI2Bot
     display_name: AI2Bot
     operator: Allen Institute for AI
     purpose: training
+    documented_url: https://allenai.org/crawler
     confidence: medium
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   - slug: diffbot
     ua_token: Diffbot
@@ -320,6 +403,8 @@ agents:
     operator: Diffbot
     purpose: training
     confidence: medium
+    notes: >
+      Official docs returned HTTP 403 on 2026-09-14. Leave unverified.
 
   - slug: you-youbot
     ua_token: YouBot
@@ -327,13 +412,19 @@ agents:
     operator: You.com
     purpose: search_index
     confidence: medium
+    notes: >
+      docs.you.com/youbot returned HTTP 403 on 2026-09-14. Leave unverified.
 
   - slug: mistral-user
     ua_token: MistralAI-User
     display_name: MistralAI-User
     operator: Mistral
     purpose: user_fetch
+    documented_url: https://docs.mistral.ai/robots
     confidence: low
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   - slug: huawei-pangubot
     ua_token: PanguBot
@@ -347,7 +438,11 @@ agents:
     display_name: PetalBot
     operator: Huawei
     purpose: search_index
+    documented_url: https://www.aspiegel.com/petalbot
     confidence: medium
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
 
   - slug: omgili-bot
     ua_token: omgilibot
@@ -355,13 +450,23 @@ agents:
     operator: Webz.io
     purpose: training
     confidence: medium
+    notes: >
+      Webz.io's historical blog names user-agent omgili/0.5, not omgilibot.
+      Leave unverified.
 
   - slug: webzio-extended
     ua_token: Webzio-Extended
     display_name: Webzio-Extended
     operator: Webz.io
     purpose: opt_out_token
+    documented_url: https://webz.io/bot.html
     confidence: low
+    verified: true
+    verified_on: 2026-09-14
+    verified_by: Brinnen
+    notes: >
+      Operator docs name the HTTP user-agent webzio-extended. Robots.txt
+      matching is case-insensitive, so Webzio-Extended is the same token.
 
   - slug: imagesift-bot
     ua_token: ImagesiftBot

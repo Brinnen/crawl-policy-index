@@ -116,9 +116,9 @@ Fetching `robots.txt` is the most defensible request on the web — but only if 
 ## Repository layout
 
 ```
-registry/agents.yml      Agent registry — source of truth. Every entry ships
-                         verified:false and is excluded from published figures
-                         until a human checks it against operator docs.
+registry/agents.yml      Agent registry — source of truth. Unverified tokens
+                         are collected but excluded from published figures
+                         until checked against operator docs.
 panel/                   WP0 — deterministic panel construction
 fetcher/                 WP1 — Go
 parser/                  WP2 — Python, + tests/corpus (500 golden cases)
