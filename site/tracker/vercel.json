@@ -8,6 +8,16 @@
     { "source": "/data/gptbot-named-grouped.csv", "destination": "/data", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/snapshot/:path*", "destination": "http://178.128.255.20/snapshot/:path*" },
     { "source": "/domain/:domain", "destination": "/domain/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/snapshot/:path*",
+      "headers": [
+        { "key": "x-vercel-enable-rewrite-caching", "value": "0" },
+        { "key": "Cache-Control", "value": "public, max-age=60" }
+      ]
+    }
   ]
 }

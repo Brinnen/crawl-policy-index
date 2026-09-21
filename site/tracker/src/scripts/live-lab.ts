@@ -1,6 +1,6 @@
 import { PURPOSE_LABELS, STATE_LABELS } from "../lib/labels";
 
-export const SNAPSHOT_URL = "https://crawlpolicyindex.org/snapshot/lab.json";
+export const SNAPSHOT_URL = "/snapshot/lab.json";
 
 export type LabRow = {
   domain?: string;

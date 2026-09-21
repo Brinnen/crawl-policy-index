@@ -1,6 +1,6 @@
 # Public tracker (Astro)
 
-Static site. It reads `src/data/lab.json` at build time, then refreshes numbers in the browser from `https://crawlpolicyindex.org/snapshot/lab.json`. It does not connect to Postgres.
+Static site. It reads `src/data/lab.json` at build time, then refreshes numbers in the browser from `/snapshot/lab.json` (proxied to the droplet). It does not connect to Postgres.
 
 The public site is an explorer, not a data dump. Do not add download routes for JSON or CSV.
 
