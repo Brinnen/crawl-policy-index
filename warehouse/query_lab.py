@@ -1,4 +1,4 @@
-"""Print lab GPTBot counts from Postgres. Not for publication."""
+"""Print GPTBot counts from Postgres for the current panel. Not a share of the web."""
 
 from __future__ import annotations
 
@@ -81,7 +81,7 @@ def main() -> int:
             )
             gptbot_blanket = cur.fetchone()[0]
 
-    print("Lab warehouse — NOT for publication (agents are unverified)")
+    print("Crawl Policy Index warehouse — 100k Tranco panel, not the web")
     print(f"  calendar robots observations: {obs}")
     print(f"  domains with a trusted robots.txt (open wildcard interval): {wild}")
     print(f"  GPTBot named rows: {named_total}  block={named_block} allow={named_allow} partial={named_partial}")

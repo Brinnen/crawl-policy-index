@@ -178,7 +178,7 @@ nav.primary a[aria-current="page"] {
 
 .notice {
   border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--warn) 10%, transparent);
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
 }
 .notice .wrap {
   padding: 0.55rem 0;

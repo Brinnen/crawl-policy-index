@@ -180,7 +180,7 @@ function applyDomainPage(lab: LabSnapshot) {
   const blanket = lab.blanket || [];
   const rows = [...named, ...blanket].filter((row) => row.domain === domain);
   if (rows.length === 0) {
-    body.innerHTML = `<tr><td colspan="5" class="empty-cell">No named bot rule for this website in the current test list.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5" class="empty-cell">No named bot rule for this website in the current panel.</td></tr>`;
     return;
   }
   body.innerHTML = rows

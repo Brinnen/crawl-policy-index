@@ -15,7 +15,7 @@ const panelLabel = panelSize.toLocaleString("en-US");
 
 const {
   title,
-  description = `See which websites allow or block AI crawlers. Early preview from ${panelLabel} test sites — not a published finding.`,
+  description = `See which websites allow or block AI crawlers. Daily record of ${panelLabel} sites on a pinned list — not a percentage of the web.`,
 } = Astro.props;
 
 const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
@@ -55,7 +55,7 @@ const exportedDate = new Date(lab.generated_at).toLocaleDateString("en-GB", {
     <div class="shell">
       <div class="notice">
         <div class="wrap">
-          Early preview · <span data-panel-size>{panelLabel}</span> test sites · do not cite as “the web”
+          <span data-panel-size>{panelLabel}</span> sites on a pinned list · not a percentage of the web
         </div>
       </div>
       <header class="topbar">
@@ -85,7 +85,7 @@ const exportedDate = new Date(lab.generated_at).toLocaleDateString("en-GB", {
       </main>
       <footer class="site-footer">
         <div class="wrap">
-          <span>Snapshot <span data-exported-date>{exportedDate}</span> · <span data-panel-size>{panelLabel}</span>-site test · not for publication</span>
+          <span>Snapshot <span data-exported-date>{exportedDate}</span> · <span data-panel-size>{panelLabel}</span>-site panel · not a share of the internet</span>
           <span><a href="/bot">If we visited your website</a></span>
         </div>
       </footer>

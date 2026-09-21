@@ -31,8 +31,8 @@ export type LabExport = {
   panel_version: string;
   parse_version: string;
   view: string;
-  lab: true;
-  verified_agents: false;
+  lab: boolean;
+  verified_agents: boolean;
   summary: LabSummary;
   named: NamedRow[];
   blanket?: NamedRow[];

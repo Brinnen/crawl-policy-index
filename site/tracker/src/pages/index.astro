@@ -16,7 +16,7 @@ const dash = (value: number | null | undefined) =>
 <Layout title="Crawl Policy Index">
   <section class="hero">
     <div class="hero-copy">
-      <p class="pill"><i></i> Early look · <span data-panel-size>{panelSize}</span> test sites</p>
+      <p class="pill"><i></i> Daily record · <span data-panel-size>{panelSize}</span> sites</p>
       <h1>Which websites allow AI to read them?</h1>
       <p class="lede">
         Sites post public rules about automated visitors. We check those rules every day
@@ -29,7 +29,7 @@ const dash = (value: number | null | undefined) =>
       </div>
     </div>
     <aside class="instrument">
-      <p class="instrument-label">How test sites treat GPTBot</p>
+      <p class="instrument-label">How this panel treats GPTBot</p>
       <p class="instrument-sub">
         GPTBot trains ChatGPT. Pink: the site named GPTBot and said no.
         Purple: the site never named GPTBot, but said “block all bots” — so GPTBot is blocked too.
@@ -48,7 +48,7 @@ const dash = (value: number | null | undefined) =>
       stat="trusted_robots"
       label="Readable rule files"
       value={n(s.trusted_robots)}
-      hint={`Of ${panelSize} test sites`}
+      hint={`Of ${panelSize} sites in this panel`}
     />
     <Stat
       stat="gptbot_named_block"

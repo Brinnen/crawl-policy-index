@@ -6,6 +6,8 @@ This page is the public contract for every published figure. v1 measures **robot
 
 Every statistic is of a named, frozen panel version. The panel file and its checksum ship with the tracker. Re-running `panel/build_panel.py` with the same pinned sources and seed must produce a byte-identical CSV.
 
+The tracker currently publishes **`sites100k`**: 100,000 non-infra names from pinned Tranco list **94XL2**. That is a defined panel, not `panel-2026Q4` and not a percentage of the web.
+
 ## Detect gate
 
 Bodies served at `/robots.txt` are classified before parsing. Rows classified `ambiguous`, `not_robots_html`, `not_robots_binary`, or `empty` are excluded from published policy aggregates. The daily distribution of these verdicts is monitored; a 3-point day-over-day shift is treated as parser-corruption until proven otherwise.

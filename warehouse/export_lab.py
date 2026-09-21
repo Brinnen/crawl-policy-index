@@ -1,4 +1,4 @@
-"""Export lab warehouse views to the Astro tracker data file.
+"""Export warehouse views to the Astro tracker data file.
 
 Called by scripts/daily-run.sh after warehouse-once.sh. Writes:
 
@@ -41,6 +41,8 @@ JOIN agent a ON a.slug = pi.agent_slug
 JOIN panel_domain pd
   ON pd.domain = pi.domain AND pd.panel_version = %s
 WHERE pi.valid_to IS NULL
+  AND a.verified
+  AND a.active
 ORDER BY pi.domain, a.operator, a.slug
 """
 
@@ -60,6 +62,8 @@ JOIN policy_interval pi
  AND pi.valid_to IS NULL
 JOIN panel_domain pd
   ON pd.domain = pi.domain AND pd.panel_version = %s
+WHERE a.verified
+  AND a.active
 GROUP BY a.slug, a.ua_token, a.display_name, a.operator, a.purpose
 ORDER BY count(*) FILTER (WHERE pi.state = 'BLOCKED') DESC, a.operator, a.slug
 """
@@ -304,8 +308,8 @@ def main(argv: list[str] | None = None) -> int:
         "panel_version": panel,
         "parse_version": "1.0.0",
         "view": "policy_interval",
-        "lab": True,
-        "verified_agents": False,
+        "lab": False,
+        "verified_agents": True,
         "summary": {
             "trusted_robots": wild,
             "gptbot_named_block": named_block,
