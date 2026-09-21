@@ -178,6 +178,65 @@ func (s *FS) LoadCompleted(runDate string) (map[string]struct{}, error) {
 	return done, nil
 }
 
+func (s *FS) LoadResourceDomains(resource string) (map[string]struct{}, error) {
+	done := map[string]struct{}{}
+	root := filepath.Join(s.root, "obs")
+	_ = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".ndjson") {
+			return nil
+		}
+		if !strings.Contains(filepath.ToSlash(path), "resource="+resource+"/") {
+			return nil
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			return nil
+		}
+		defer f.Close()
+		sc := bufio.NewScanner(f)
+		sc.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
+		for sc.Scan() {
+			var obs Observation
+			if json.Unmarshal(sc.Bytes(), &obs) != nil {
+				continue
+			}
+			if obs.Domain != "" {
+				done[obs.Domain] = struct{}{}
+			}
+		}
+		return nil
+	})
+	return done, nil
+}
+
+func (s *FS) LoadTodayContentSHA(runDate, resource string) (map[string]string, error) {
+	out := map[string]string{}
+	root := filepath.Join(s.root, "obs", "dt="+runDate, "resource="+resource)
+	_ = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".ndjson") {
+			return nil
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			return nil
+		}
+		defer f.Close()
+		sc := bufio.NewScanner(f)
+		sc.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
+		for sc.Scan() {
+			var obs Observation
+			if json.Unmarshal(sc.Bytes(), &obs) != nil {
+				continue
+			}
+			if obs.Domain != "" && obs.ContentSHA256 != "" {
+				out[obs.Domain] = obs.ContentSHA256
+			}
+		}
+		return nil
+	})
+	return out, nil
+}
+
 type Manifest struct {
 	RunDate                 string         `json:"run_date"`
 	PanelVersion            string         `json:"panel_version"`

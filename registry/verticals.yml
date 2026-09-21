@@ -1,5 +1,6 @@
-# Vertical taxonomy. Axel owns the labels; this file is the assignment source.
-# A domain may appear in multiple verticals. Unknown is valid — do not guess.
+# Vertical taxonomy. Unknown is valid — do not guess from TLD or html lang.
+# Country here is a labeled market (ISO 3166-1 alpha-2), not a language tag.
+# This news list is curated and incomplete. It is a stratum, not “all news.”
 
 version: "1.0.0"
 
@@ -17,5 +18,103 @@ verticals:
   - slug: other
     label: Other / unassigned
 
-# Hand-maintained news stratum (~120 countries). Start empty; WP0 fills this.
-news_domains: []
+news_domains:
+  # Sweden
+  - { domain: svt.se, country: SE }
+  - { domain: sverigesradio.se, country: SE }
+  - { domain: dn.se, country: SE }
+  - { domain: svd.se, country: SE }
+  - { domain: aftonbladet.se, country: SE }
+  - { domain: expressen.se, country: SE }
+  - { domain: gp.se, country: SE }
+  - { domain: sydsvenskan.se, country: SE }
+  - { domain: hd.se, country: SE }
+  - { domain: di.se, country: SE }
+  - { domain: omni.se, country: SE }
+  - { domain: tv4.se, country: SE }
+  - { domain: breakit.se, country: SE }
+  - { domain: dagensarena.se, country: SE }
+  - { domain: vk.se, country: SE }
+  - { domain: nsd.se, country: SE }
+  - { domain: unt.se, country: SE }
+  - { domain: nt.se, country: SE }
+  - { domain: corren.se, country: SE }
+  - { domain: trelleborgsallehanda.se, country: SE }
+  # Norway
+  - { domain: nrk.no, country: NO }
+  - { domain: vg.no, country: NO }
+  - { domain: dagbladet.no, country: NO }
+  - { domain: aftenposten.no, country: NO }
+  - { domain: e24.no, country: NO }
+  - { domain: dn.no, country: NO }
+  - { domain: bt.no, country: NO }
+  - { domain: adressa.no, country: NO }
+  - { domain: nettavisen.no, country: NO }
+  - { domain: tv2.no, country: NO }
+  # Denmark
+  - { domain: dr.dk, country: DK }
+  - { domain: politiken.dk, country: DK }
+  - { domain: berlingske.dk, country: DK }
+  - { domain: jyllands-posten.dk, country: DK }
+  - { domain: ekstrabladet.dk, country: DK }
+  - { domain: bt.dk, country: DK }
+  - { domain: information.dk, country: DK }
+  - { domain: tv2.dk, country: DK }
+  # Finland (hbl.fi is Swedish-language; country is still FI)
+  - { domain: yle.fi, country: FI }
+  - { domain: hs.fi, country: FI }
+  - { domain: is.fi, country: FI }
+  - { domain: iltalehti.fi, country: FI }
+  - { domain: kauppalehti.fi, country: FI }
+  - { domain: hbl.fi, country: FI }
+  - { domain: mtvuutiset.fi, country: FI }
+  # Iceland
+  - { domain: ruv.is, country: IS }
+  - { domain: visir.is, country: IS }
+  - { domain: mbl.is, country: IS }
+  # United Kingdom / Ireland
+  - { domain: bbc.com, country: GB }
+  - { domain: bbc.co.uk, country: GB }
+  - { domain: theguardian.com, country: GB }
+  - { domain: ft.com, country: GB }
+  - { domain: telegraph.co.uk, country: GB }
+  - { domain: independent.co.uk, country: GB }
+  - { domain: reuters.com, country: GB }
+  - { domain: sky.com, country: GB }
+  - { domain: irishtimes.com, country: IE }
+  - { domain: rte.ie, country: IE }
+  # United States
+  - { domain: nytimes.com, country: US }
+  - { domain: washingtonpost.com, country: US }
+  - { domain: wsj.com, country: US }
+  - { domain: cnn.com, country: US }
+  - { domain: apnews.com, country: US }
+  - { domain: npr.org, country: US }
+  - { domain: latimes.com, country: US }
+  - { domain: bloomberg.com, country: US }
+  - { domain: politico.com, country: US }
+  - { domain: theatlantic.com, country: US }
+  # Germany / France / Spain / Italy / Netherlands
+  - { domain: spiegel.de, country: DE }
+  - { domain: zeit.de, country: DE }
+  - { domain: faz.net, country: DE }
+  - { domain: tagesschau.de, country: DE }
+  - { domain: lemonde.fr, country: FR }
+  - { domain: lefigaro.fr, country: FR }
+  - { domain: liberation.fr, country: FR }
+  - { domain: elpais.com, country: ES }
+  - { domain: elmundo.es, country: ES }
+  - { domain: corriere.it, country: IT }
+  - { domain: lastampa.it, country: IT }
+  - { domain: volkskrant.nl, country: NL }
+  - { domain: nrc.nl, country: NL }
+  # Other
+  - { domain: smh.com.au, country: AU }
+  - { domain: abc.net.au, country: AU }
+  - { domain: theglobeandmail.com, country: CA }
+  - { domain: cbc.ca, country: CA }
+  - { domain: asahi.com, country: JP }
+  - { domain: nhk.or.jp, country: JP }
+  - { domain: straitstimes.com, country: SG }
+  - { domain: haaretz.com, country: IL }
+  - { domain: aljazeera.com, country: QA }

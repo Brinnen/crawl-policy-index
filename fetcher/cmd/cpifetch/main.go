@@ -50,6 +50,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	htmlHomeDone, err := st.LoadResourceDomains("html_home")
+	if err != nil {
+		log.Fatal(err)
+	}
+	robotsSHA, err := st.LoadTodayContentSHA(date, "robots_txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	uaToken := fetch.UAProductToken(cfg.Fetcher.UserAgent)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
@@ -83,10 +92,41 @@ func main() {
 					continue
 				}
 				sitemapURL := ""
+				robotsBody := []byte(nil)
 				for _, resource := range cfg.Fetcher.Resources {
 					key := d.Domain + "|" + resource
-					if _, ok := done[key]; ok {
+					mu.Lock()
+					_, already := done[key]
+					_, htmlDone := htmlHomeDone[d.Domain]
+					sha := robotsSHA[d.Domain]
+					mu.Unlock()
+					if already {
 						continue
+					}
+					if resource == "html_home" {
+						if htmlDone {
+							continue
+						}
+						body := robotsBody
+						if body == nil && sha != "" {
+							if got, rerr := st.GetBlob(sha); rerr == nil {
+								body = got
+							}
+						}
+						if body != nil && !fetch.AllowsHomepage(body, uaToken) {
+							obs := fetch.SkippedRobotsObservation(d.Domain, resource, date, cfg.Panel.Version, cfg.Fetcher.FetcherVersion)
+							if err := st.WriteObservation(sh, obs); err != nil {
+								log.Printf("write obs: %v", err)
+								continue
+							}
+							mu.Lock()
+							done[key] = struct{}{}
+							htmlHomeDone[d.Domain] = struct{}{}
+							byOutcome[obs.Outcome]++
+							mu.Unlock()
+							attempted.Add(1)
+							continue
+						}
 					}
 					var obs store.Observation
 					var err error
@@ -105,7 +145,16 @@ func main() {
 					if resource == "robots_txt" && obs.Outcome == fetch.OutcomeOK && obs.ContentSHA256 != "" {
 						if body, rerr := st.GetBlob(obs.ContentSHA256); rerr == nil {
 							sitemapURL = fetch.ChooseSitemapURL(d.Domain, fetch.DeclaredSitemaps(body))
+							robotsBody = body
+							mu.Lock()
+							robotsSHA[d.Domain] = obs.ContentSHA256
+							mu.Unlock()
 						}
+					}
+					if resource == "html_home" {
+						mu.Lock()
+						htmlHomeDone[d.Domain] = struct{}{}
+						mu.Unlock()
 					}
 					if err := st.WriteObservation(sh, obs); err != nil {
 						log.Printf("write obs: %v", err)

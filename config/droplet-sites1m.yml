@@ -1,6 +1,6 @@
 panel:
-  version: "sites100k"
-  path: "data/panel-sites100k.csv"
+  version: "sites1m"
+  path: "data/panel-sites1m.csv"
 
 storage:
   backend: "fs"
@@ -12,7 +12,7 @@ database:
 fetcher:
   resources: [robots_txt, html_home]
   window_start_utc: "02:00"
-  window_hours: 6
+  window_hours: 18
   shards: 1
   workers_per_shard: 64
   global_rate_limit_rps: 80

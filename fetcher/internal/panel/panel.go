@@ -70,6 +70,8 @@ func ResourcePath(resource string) string {
 		return "/llms.txt"
 	case "sitemap_xml":
 		return "/sitemap.xml"
+	case "html_home":
+		return "/"
 	default:
 		return "/" + resource
 	}

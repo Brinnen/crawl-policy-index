@@ -7,7 +7,9 @@ import lab from "../../data/lab.json";
 const agents = lab.by_agent ?? [];
 const named = lab.named ?? [];
 const blanket = lab.blanket ?? [];
-const panelSize = Number(lab.summary.panel_size || 1000).toLocaleString("en-US");
+const languages = lab.by_language ?? [];
+const countries = lab.by_country ?? [];
+const verticals = lab.by_vertical ?? [];
 ---
 <Layout
   title="Explore — Crawl Policy Index"
@@ -18,8 +20,16 @@ const panelSize = Number(lab.summary.panel_size || 1000).toLocaleString("en-US")
     <h1>Look up a bot or a website.</h1>
   </div>
   <p class="lede">
-    Filter bots in the table below. To see one website, type its name — for example amazon.com.
+    Filter bots below. Type a website, or ask a slice: Swedish-language sites, or labeled news in Sweden.
+    Language is not country. News is a curated list, not every publisher.
   </p>
-  <Explorer agents={agents} named={named} blanket={blanket} />
+  <Explorer
+    agents={agents}
+    named={named}
+    blanket={blanket}
+    languages={languages}
+    countries={countries}
+    verticals={verticals}
+  />
   <Glossary />
 </Layout>

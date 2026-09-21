@@ -37,6 +37,7 @@ func testCfg(base string, root string) config.Config {
 				"robots_txt":  1024,
 				"llms_txt":    1024,
 				"sitemap_xml": 1024,
+				"html_home":   2048,
 			},
 		},
 	}
@@ -308,8 +309,8 @@ func TestFetchUsesDeclaredSitemap(t *testing.T) {
 }
 
 func TestAllOutcomesListed(t *testing.T) {
-	if len(AllOutcomes) != 13 {
-		t.Fatalf("want 13 outcomes, got %d", len(AllOutcomes))
+	if len(AllOutcomes) != 14 {
+		t.Fatalf("want 14 outcomes, got %d", len(AllOutcomes))
 	}
 }
 
@@ -342,3 +343,24 @@ func TestTruncatedKeepsPrefix(t *testing.T) {
 		t.Fatalf("len %d", obs.ContentLength)
 	}
 }
+
+func TestHtmlHomePathAndAccept(t *testing.T) {
+	f, _, _ := newFetcher(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			t.Errorf("path %s", r.URL.Path)
+		}
+		if !strings.Contains(r.Header.Get("Accept"), "text/html") {
+			t.Errorf("accept %s", r.Header.Get("Accept"))
+		}
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<html lang="sv"><body>nyheter</body></html>`))
+	}))
+	obs, err := f.Fetch(context.Background(), "example.com", "html_home", "2026-09-21", "dev")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if obs.Outcome != OutcomeOK {
+		t.Fatalf("outcome %s", obs.Outcome)
+	}
+}
+

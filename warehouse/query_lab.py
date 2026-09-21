@@ -80,8 +80,20 @@ def main() -> int:
                 """
             )
             gptbot_blanket = cur.fetchone()[0]
+            try:
+                cur.execute(
+                    """
+                    SELECT
+                      count(*) FILTER (WHERE language IS NOT NULL),
+                      count(*) FILTER (WHERE language_source = 'robots_disallow')
+                    FROM domain_language
+                    """
+                )
+                language_known, language_robots_disallow = cur.fetchone()
+            except Exception:
+                language_known, language_robots_disallow = None, None
 
-    print("Crawl Policy Index warehouse — 100k Tranco panel, not the web")
+    print("Crawl Policy Index warehouse — named Tranco panel, not the web")
     print(f"  calendar robots observations: {obs}")
     print(f"  domains with a trusted robots.txt (open wildcard interval): {wild}")
     print(f"  GPTBot named rows: {named_total}  block={named_block} allow={named_allow} partial={named_partial}")
@@ -89,6 +101,10 @@ def main() -> int:
     print(f"  named GPTBot block but OpenAI search not blocked: {split}")
     print(f"  GPTBot blocked only via block-all-bots (*): {gptbot_blanket}")
     print(f"  Googlebot named BLOCK (sanity): {google_block}")
+    if language_known is None:
+        print("  homepage language: not loaded yet")
+    else:
+        print(f"  homepage language assigned={language_known} robots_disallow={language_robots_disallow}")
     return 0
 
 

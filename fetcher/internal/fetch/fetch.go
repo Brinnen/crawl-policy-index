@@ -42,7 +42,7 @@ var AllOutcomes = []string{
 	OutcomeOK, OutcomeNotFound, OutcomeForbidden, OutcomeServerError,
 	OutcomeRateLimited, OutcomeTimeout, OutcomeDNS, OutcomeTLS,
 	OutcomeConnRefused, OutcomeTooLarge, OutcomeEmptyBody,
-	OutcomeRedirectLoop, OutcomeInvalidURL,
+	OutcomeRedirectLoop, OutcomeInvalidURL, OutcomeSkippedRobots,
 }
 
 type Fetcher struct {
@@ -137,24 +137,24 @@ func (f *Fetcher) FetchAt(ctx context.Context, domain, resource, runDate, panelV
 	httpsURL, httpURL := f.targetURLs(domain, path, targetURL)
 
 	start := time.Now()
-	res, err := f.attempt(ctx, domain, httpsURL, capBytes, "https")
+	res, err := f.attempt(ctx, domain, httpsURL, capBytes, "https", resource)
 	if isDNSErr(err) && f.cfg.Fetcher.ForceBaseURL == "" {
 		timer := time.NewTimer(250 * time.Millisecond)
 		select {
 		case <-ctx.Done():
 			timer.Stop()
 		case <-timer.C:
-			res, err = f.attempt(ctx, domain, httpsURL, capBytes, "https")
+			res, err = f.attempt(ctx, domain, httpsURL, capBytes, "https", resource)
 		}
 	}
 	if err != nil && shouldFallbackHTTP(err) && f.cfg.Fetcher.ForceBaseURL == "" {
-		res, err = f.attempt(ctx, domain, httpURL, capBytes, "http")
+		res, err = f.attempt(ctx, domain, httpURL, capBytes, "http", resource)
 	}
 	if isDNSErr(err) && targetURL == "" && f.cfg.Fetcher.ForceBaseURL == "" {
 		if wwwHTTPS := withWWW(httpsURL); wwwHTTPS != "" {
-			res, err = f.attempt(ctx, domain, wwwHTTPS, capBytes, "https")
+			res, err = f.attempt(ctx, domain, wwwHTTPS, capBytes, "https", resource)
 			if err != nil && shouldFallbackHTTP(err) {
-				res, err = f.attempt(ctx, domain, withWWW(httpURL), capBytes, "http")
+				res, err = f.attempt(ctx, domain, withWWW(httpURL), capBytes, "http", resource)
 			}
 		}
 	}
@@ -221,7 +221,7 @@ func merge(base store.Observation, over store.Observation) store.Observation {
 	return base
 }
 
-func (f *Fetcher) attempt(ctx context.Context, domain, rawURL string, capBytes int, scheme string) (*result, error) {
+func (f *Fetcher) attempt(ctx context.Context, domain, rawURL string, capBytes int, scheme, resource string) (*result, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		msg := err.Error()
@@ -257,7 +257,7 @@ func (f *Fetcher) attempt(ctx context.Context, domain, rawURL string, capBytes i
 				return nil, err
 			}
 		}
-		last, lastErr = f.doOnce(ctx, domain, u, capBytes, scheme)
+		last, lastErr = f.doOnce(ctx, domain, u, capBytes, scheme, resource)
 		if lastErr == nil && last != nil && !retryable(last.obs.Outcome) {
 			return last, nil
 		}
@@ -299,14 +299,18 @@ func retryableErr(err error) bool {
 	return retryable(o)
 }
 
-func (f *Fetcher) doOnce(ctx context.Context, domain string, u *url.URL, capBytes int, scheme string) (*result, error) {
+func (f *Fetcher) doOnce(ctx context.Context, domain string, u *url.URL, capBytes int, scheme, resource string) (*result, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
 		msg := err.Error()
 		return &result{obs: store.Observation{URLRequested: u.String(), Outcome: OutcomeInvalidURL, ErrorDetail: &msg, SchemeUsed: scheme}}, nil
 	}
 	req.Header.Set("User-Agent", f.cfg.Fetcher.UserAgent)
-	req.Header.Set("Accept", "text/plain, text/markdown, application/xml, */*")
+	accept := "text/plain, text/markdown, application/xml, */*"
+	if resource == "html_home" {
+		accept = "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8"
+	}
+	req.Header.Set("Accept", accept)
 	req.Header.Set("Accept-Encoding", "gzip")
 	if f.cfg.Fetcher.ForceBaseURL != "" {
 		req.Host = domain

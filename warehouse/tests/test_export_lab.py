@@ -12,6 +12,7 @@ def test_published_export_uses_verified_agents_only():
     assert '"verified_agents": True' in src
     assert "LOOKUP_NAMED_SQL" in src
     assert "LOOKUP_BLANKET_SQL" in src
+    assert "SITES_SQL" in src
 
 
 def test_write_lookup_is_compact(tmp_path: Path):
@@ -32,4 +33,7 @@ def test_explorer_loads_lookup_url():
         / "Explorer.astro"
     ).read_text(encoding="utf-8")
     assert 'LOOKUP_URL = "/snapshot/lookup.json"' in src
-    assert "Type a website to look it up" in src
+    assert "Type a website" in src
+    assert "domain-language" in src
+    assert "domain-country" in src
+    assert "domain-vertical" in src

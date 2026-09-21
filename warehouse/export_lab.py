@@ -87,10 +87,24 @@ WHERE wi.valid_to IS NULL
   AND wi.state = 'BLOCKED'
 """
 
+SITES_SQL = """
+SELECT
+    pd.domain,
+    COALESCE(dl.language, ''),
+    COALESCE(pd.country::text, ''),
+    COALESCE(pd.vertical, 'other')
+FROM panel_domain pd
+LEFT JOIN domain_language dl ON dl.domain = pd.domain
+WHERE pd.panel_version = %s
+"""
 
-def write_lookup(path: Path, named: list, blanket: list) -> None:
+
+def write_lookup(path: Path, named: list, blanket: list, sites: list | None = None) -> None:
+    payload = {"named": named, "blanket": blanket}
+    if sites is not None:
+        payload["sites"] = sites
     path.write_text(
-        json.dumps({"named": named, "blanket": blanket}, separators=(",", ":")) + "\n",
+        json.dumps(payload, separators=(",", ":")) + "\n",
         encoding="utf-8",
     )
 
@@ -239,6 +253,72 @@ def main(argv: list[str] | None = None) -> int:
             lookup_named = [[domain, slug, state] for domain, slug, state in cur.fetchall()]
             cur.execute(LOOKUP_BLANKET_SQL, (panel,))
             lookup_blanket = [[domain, state] for domain, state in cur.fetchall()]
+            lookup_sites: list[list[str]] = []
+            language_known = 0
+            language_unknown = panel_size
+            language_robots_disallow = 0
+            by_language: list[dict] = []
+            by_country: list[dict] = []
+            by_vertical: list[dict] = []
+            cur.execute("SAVEPOINT slices")
+            try:
+                cur.execute(SITES_SQL, (panel,))
+                lookup_sites = [
+                    [domain, lang, country, vertical]
+                    for domain, lang, country, vertical in cur.fetchall()
+                ]
+                cur.execute(
+                    """
+                    SELECT
+                      count(*) FILTER (WHERE dl.language IS NOT NULL),
+                      count(*) FILTER (WHERE dl.language_source = 'robots_disallow'),
+                      count(*) FILTER (WHERE dl.domain IS NULL OR dl.language IS NULL)
+                    FROM panel_domain pd
+                    LEFT JOIN domain_language dl ON dl.domain = pd.domain
+                    WHERE pd.panel_version = %s
+                    """,
+                    (panel,),
+                )
+                language_known, language_robots_disallow, language_unknown = cur.fetchone()
+                cur.execute(
+                    """
+                    SELECT dl.language, count(*)
+                    FROM panel_domain pd
+                    JOIN domain_language dl ON dl.domain = pd.domain
+                    WHERE pd.panel_version = %s AND dl.language IS NOT NULL
+                    GROUP BY 1
+                    ORDER BY 2 DESC
+                    LIMIT 40
+                    """,
+                    (panel,),
+                )
+                by_language = [{"language": code, "sites": n} for code, n in cur.fetchall()]
+                cur.execute(
+                    """
+                    SELECT pd.country::text, count(*)
+                    FROM panel_domain pd
+                    WHERE pd.panel_version = %s AND pd.country IS NOT NULL
+                    GROUP BY 1
+                    ORDER BY 2 DESC
+                    LIMIT 80
+                    """,
+                    (panel,),
+                )
+                by_country = [{"country": code, "sites": n} for code, n in cur.fetchall()]
+                cur.execute(
+                    """
+                    SELECT COALESCE(pd.vertical, 'other'), count(*)
+                    FROM panel_domain pd
+                    WHERE pd.panel_version = %s
+                    GROUP BY 1
+                    ORDER BY 2 DESC
+                    """,
+                    (panel,),
+                )
+                by_vertical = [{"vertical": slug, "sites": n} for slug, n in cur.fetchall()]
+                cur.execute("RELEASE SAVEPOINT slices")
+            except Exception:
+                cur.execute("ROLLBACK TO SAVEPOINT slices")
             include_rows = panel_size <= 5000
             named: list[dict] = []
             blanket: list[dict] = []
@@ -351,8 +431,14 @@ def main(argv: list[str] | None = None) -> int:
             "googlebot_named_block": google_block,
             "calendar_observations": obs,
             "panel_size": panel_size,
+            "language_known": language_known,
+            "language_unknown": language_unknown,
+            "language_robots_disallow": language_robots_disallow,
         },
         "by_agent": by_agent,
+        "by_language": by_language,
+        "by_country": by_country,
+        "by_vertical": by_vertical,
         "named": named,
         "blanket": blanket,
         "grouped": grouped,
@@ -361,12 +447,15 @@ def main(argv: list[str] | None = None) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     lookup_path = out.with_name("lookup.json")
-    write_lookup(lookup_path, lookup_named, lookup_blanket)
+    write_lookup(lookup_path, lookup_named, lookup_blanket, lookup_sites)
     print(
         f"wrote {out} panel={panel} size={panel_size} "
         f"({len(named)} named rows, {len(blanket)} block-all-bots, {len(by_agent)} agents)"
     )
-    print(f"wrote {lookup_path} lookup named={len(lookup_named)} blanket={len(lookup_blanket)}")
+    print(
+        f"wrote {lookup_path} lookup named={len(lookup_named)} "
+        f"blanket={len(lookup_blanket)} sites={len(lookup_sites)}"
+    )
     return 0
 
 

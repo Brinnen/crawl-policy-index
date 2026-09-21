@@ -4,6 +4,7 @@
     python panel/build_panel.py --version tranco1000 --tranco-top 1000 --tranco-id 94XL2
     python panel/build_panel.py --version sites1000 --tranco-top 3000 --keep 1000 --drop-infra --tranco-id 94XL2
     python panel/build_panel.py --version sites100k --tranco-top 150000 --keep 100000 --drop-infra --tranco-id 94XL2
+    python panel/build_panel.py --version sites1m --tranco-top 1200000 --keep 1000000 --drop-infra --tranco-id 94XL2
     python panel/build_panel.py --version dev --sample 5000 --seed 42
 """
 
@@ -20,6 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from labels import apply_labels, load_labels
 from sources.infra import is_infrastructure, load_suffixes
 from sources.tranco import fetch_tranco, resolve_list_id
 
@@ -103,6 +105,14 @@ def main(argv: list[str] | None = None) -> int:
     else:
         raise SystemExit("Pass --tranco-top N (pinned list) or --sample N (synthetic).")
 
+    labels: dict = {"news": {}}
+    news_added = 0
+    if args.tranco_top:
+        labels = load_labels()
+        before = len(rows)
+        rows = apply_labels(rows, labels)
+        news_added = len(rows) - before
+
     name = f"panel-{args.version}.csv"
     path = out_dir / name
     fieldnames = [
@@ -139,6 +149,8 @@ def main(argv: list[str] | None = None) -> int:
         "infra_rules": (
             ["denylist", "hyphen-endings", "cdn-or-dns-in-label"] if args.drop_infra else []
         ),
+        "news_domains": len(labels.get("news") or {}),
+        "news_added": news_added,
         "sources": sources,
     }
     man_path = out_dir / f"panel-{args.version}.manifest.json"

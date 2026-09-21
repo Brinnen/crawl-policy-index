@@ -24,6 +24,6 @@ cd /root/crawl-policy-index && git pull && bash scripts/setup-daily.sh
 
 That installs a 02:00 UTC job: fetch → warehouse → export → publish the snapshot. Overview and Explore update from that URL. No manual export or commit.
 
-The daily job uses the 100,000-site panel (`sites100k`). That is a pinned Tranco list, not the web. Totals live in `lab.json`. Website search loads compact `lookup.json` when someone types a name.
+The daily job uses the active panel (`sites100k` or `sites1m`). That is a pinned Tranco list plus a curated news stratum, not the web. Totals live in `lab.json`. Website search loads compact `lookup.json` when someone types a name or picks language / news / a labeled country. Language is a one-shot homepage declaration, not a country.
 
 Optional: put `GITHUB_TOKEN` in `/root/crawl-policy-index/.env` so the job also commits `lab.json` and Vercel rebuilds.

@@ -84,6 +84,23 @@ const panelSize = Number(lab.summary.panel_size || 1000).toLocaleString("en-US")
       Tokens we could not confirm are stored, but they are not in published figures.
     </p>
 
+    <h2>Language is not country</h2>
+    <p>
+      When a site’s robots.txt allows us to fetch the homepage, we read it <strong>once</strong>
+      and record the declared language (<code>html lang</code>, or failing that a language
+      header / locale tag). <code>sv</code> means Swedish, not Sweden. We do not guess.
+    </p>
+    <p>
+      If the site blocked us from the homepage, or published no language tag, the language
+      is unknown. Unknown will be more common among sites that block crawlers. Do not write
+      “Swedish sites block AI” from the language filter.
+    </p>
+    <p>
+      Country and “news” are a separate, labeled list we maintain. That list is incomplete
+      on purpose. “News in Sweden” means the labeled news sites with country SE — not every
+      publisher, and not every Swedish-language homepage.
+    </p>
+
     <h2>Training, search, and a person asking</h2>
     <p>Companies often run more than one bot. We keep them apart on purpose:</p>
     <ul>

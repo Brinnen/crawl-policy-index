@@ -21,7 +21,7 @@ PANEL="${CPI_PANEL:-sites1000}"
 CSV="$ROOT/data/panel-${PANEL}.csv"
 MANIFEST="$ROOT/data/panel-${PANEL}.manifest.json"
 if [[ ! -f "$CSV" || ! -f "$MANIFEST" ]]; then
-  echo "missing panel $CSV — run: bash $ROOT/scripts/setup-sites100k.sh"
+  echo "missing panel $CSV — run: bash $ROOT/scripts/setup-sites100k.sh or setup-sites1m.sh"
   exit 1
 fi
 
@@ -45,6 +45,11 @@ python3 "$ROOT/warehouse/load/load_observations.py" --store "$ROOT/data/store"
 
 echo "Deriving robots.txt intervals for ${PANEL}..."
 python3 "$ROOT/warehouse/derive/derive_robots.py" \
+  --store "$ROOT/data/store" \
+  --panel-version "$PANEL"
+
+echo "Deriving homepage language (one-shot, existing rows kept)..."
+python3 "$ROOT/warehouse/derive/derive_language.py" \
   --store "$ROOT/data/store" \
   --panel-version "$PANEL"
 

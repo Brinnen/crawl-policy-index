@@ -19,6 +19,10 @@ CSV="$ROOT/data/panel-${PANEL}.csv"
 
 cd "$ROOT/fetcher"
 
+if command -v go >/dev/null 2>&1; then
+  echo "building fetcher..."
+  go build -o cpifetch ./cmd/cpifetch
+fi
 if [[ ! -x ./cpifetch ]]; then
   echo "missing $ROOT/fetcher/cpifetch — run: bash $ROOT/scripts/setup-droplet.sh" >&2
   exit 1
@@ -28,7 +32,7 @@ if [[ ! -f "$CONFIG" ]]; then
   exit 1
 fi
 if [[ ! -f "$CSV" ]]; then
-  echo "missing panel $CSV — run: bash $ROOT/scripts/setup-sites100k.sh" >&2
+  echo "missing panel $CSV — run: bash $ROOT/scripts/setup-sites100k.sh or setup-sites1m.sh" >&2
   exit 1
 fi
 

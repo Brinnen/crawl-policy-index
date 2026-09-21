@@ -1,5 +1,5 @@
 ---
-import { PURPOSE_LABELS, STATE_LABELS, purposeLabel } from "../lib/labels";
+import { PURPOSE_LABELS, STATE_LABELS, LANGUAGE_LABELS, COUNTRY_LABELS, VERTICAL_LABELS, purposeLabel } from "../lib/labels";
 
 interface AgentRow {
   slug: string;
@@ -25,13 +25,23 @@ interface NamedRow {
   group_key: string;
 }
 
+interface SliceRow {
+  language?: string;
+  country?: string;
+  vertical?: string;
+  sites: number;
+}
+
 interface Props {
   agents: AgentRow[];
   named: NamedRow[];
   blanket: NamedRow[];
+  languages?: SliceRow[];
+  countries?: SliceRow[];
+  verticals?: SliceRow[];
 }
 
-const { agents, named, blanket } = Astro.props;
+const { agents, named, blanket, languages = [], countries = [], verticals = [] } = Astro.props;
 
 const operators = [...new Set(agents.map((a) => a.operator))].sort();
 const purposes = [...new Set(agents.map((a) => a.purpose))].sort();
@@ -41,8 +51,14 @@ const payload = JSON.stringify({
   agents,
   named,
   blanket,
+  languages,
+  countries,
+  verticals,
   purposeLabels: PURPOSE_LABELS,
   stateLabels: STATE_LABELS,
+  languageLabels: LANGUAGE_LABELS,
+  countryLabels: COUNTRY_LABELS,
+  verticalLabels: VERTICAL_LABELS,
 }).replaceAll("<", "\\u003c");
 ---
 <div class="explorer" id="cpi-explorer">
@@ -89,7 +105,7 @@ const payload = JSON.stringify({
 
   <section class="panel">
     <h2>By website</h2>
-    <p class="sub">Type a website to see what it wrote. Named bots sit next to a blanket “block all bots” rule.</p>
+    <p class="sub">Type a website, or filter by language, labeled country, or news. Language is what the homepage declared — not the country. Country and news are only set where we labeled them.</p>
     <div class="filters">
       <label class="field">
         <span>Website</span>
@@ -116,6 +132,26 @@ const payload = JSON.stringify({
         <select data-filter="domain-purpose">
           <option value="">All uses</option>
           {purposes.map((p) => <option value={p}>{purposeLabel(p)}</option>)}
+        </select>
+      </label>
+      <label class="field">
+        <span>Language</span>
+        <select data-filter="domain-language">
+          <option value="">Any language</option>
+          <option value="unknown">Unknown</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Country (labeled)</span>
+        <select data-filter="domain-country">
+          <option value="">Any labeled country</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Category (labeled)</span>
+        <select data-filter="domain-vertical">
+          <option value="">Any category</option>
+          <option value="news">News</option>
         </select>
       </label>
     </div>
@@ -151,6 +187,9 @@ const payload = JSON.stringify({
     let blanket = data.blanket || [];
     const PURPOSE = data.purposeLabels || {};
     const STATE = data.stateLabels || {};
+    const LANG = data.languageLabels || {};
+    const COUNTRY = data.countryLabels || {};
+    const VERTICAL = data.verticalLabels || {};
     const $ = (sel: string) => root.querySelector(sel) as HTMLInputElement | HTMLSelectElement;
     const agentBody = root.querySelector("[data-agent-body]") as HTMLElement;
     const domainBody = root.querySelector("[data-domain-body]") as HTMLElement;
@@ -162,7 +201,7 @@ const payload = JSON.stringify({
     let lookupLoaded = false;
     let namedTriples: [string, string, string][] = [];
     let blanketTriples: [string, string][] = [];
-    let agentMeta: Record<string, { token: string; agent: string; operator: string; purpose: string }> = {};
+    let siteMeta: Record<string, { language: string; country: string; vertical: string }> = {};
 
     function rebuildMeta() {
       agentMeta = {};
@@ -204,18 +243,62 @@ const payload = JSON.stringify({
         group_key: groupKey(domain),
       };
     }
+    function ingestSites(rows: [string, string, string, string][] | undefined) {
+      if (!rows) return;
+      for (const [domain, language, country, vertical] of rows) {
+        siteMeta[domain] = {
+          language: language || "",
+          country: (country || "").toUpperCase(),
+          vertical: vertical || "other",
+        };
+      }
+    }
+    function siteOf(domain: string) {
+      return siteMeta[domain] || { language: "", country: "", vertical: "other" };
+    }
+    function fillSliceFilters() {
+      const langSel = $('[data-filter="domain-language"]') as HTMLSelectElement;
+      const countrySel = $('[data-filter="domain-country"]') as HTMLSelectElement;
+      const vertSel = $('[data-filter="domain-vertical"]') as HTMLSelectElement;
+      const langs = uniqueSorted(Object.values(siteMeta).map((s) => s.language).filter(Boolean));
+      const countries = uniqueSorted(Object.values(siteMeta).map((s) => s.country).filter(Boolean));
+      const verts = uniqueSorted(Object.values(siteMeta).map((s) => s.vertical).filter((v) => v && v !== "other"));
+      fillSelect(
+        langSel,
+        [{ value: "unknown", label: "Unknown" }, ...langs.map((code) => ({ value: code, label: LANG[code] || code }))],
+        "Any language",
+      );
+      fillSelect(
+        countrySel,
+        countries.map((code) => ({ value: code, label: COUNTRY[code] || code })),
+        "Any labeled country",
+      );
+      fillSelect(
+        vertSel,
+        verts.map((v) => ({ value: v, label: VERTICAL[v] || v })),
+        "Any category",
+      );
+    }
     function ensureLookup() {
-      if (named.length || blanket.length || lookupLoaded) return Promise.resolve();
+      if (lookupLoaded) return Promise.resolve();
       if (!lookupPromise) {
         lookupPromise = fetch(LOOKUP_URL, { cache: "no-store" })
           .then((res) => {
             if (!res.ok) throw new Error(String(res.status));
-            return res.json() as Promise<{ named?: [string, string, string][]; blanket?: [string, string][] }>;
+            return res.json() as Promise<{
+              named?: [string, string, string][];
+              blanket?: [string, string][];
+              sites?: [string, string, string, string][];
+            }>;
           })
           .then((pack) => {
-            namedTriples = pack.named || [];
-            blanketTriples = pack.blanket || [];
+            if (!named.length && !blanket.length) {
+              namedTriples = pack.named || [];
+              blanketTriples = pack.blanket || [];
+            }
+            ingestSites(pack.sites);
             lookupLoaded = true;
+            fillSliceFilters();
           });
       }
       return lookupPromise;
@@ -254,6 +337,9 @@ const payload = JSON.stringify({
         agent: "domain-agent",
         state: "domain-state",
         dpurpose: "domain-purpose",
+        lang: "domain-language",
+        country: "domain-country",
+        vertical: "domain-vertical",
       };
       for (const [key, attr] of Object.entries(map)) {
         const el = root!.querySelector(`[data-filter="${attr}"]`) as HTMLInputElement | HTMLSelectElement | null;
@@ -277,6 +363,9 @@ const payload = JSON.stringify({
       set("agent", "domain-agent");
       set("state", "domain-state");
       set("dpurpose", "domain-purpose");
+      set("lang", "domain-language");
+      set("country", "domain-country");
+      set("vertical", "domain-vertical");
       const collapse = root!.querySelector('[data-filter="collapse-amazon"]') as HTMLInputElement | null;
       if (collapse?.checked) u.searchParams.set("collapse", "1");
       else u.searchParams.delete("collapse");
@@ -309,14 +398,18 @@ const payload = JSON.stringify({
     }
     function renderDomains() {
       const q = $('[data-filter="domain-q"]').value.trim().toLowerCase();
-      const needsLookup = named.length === 0 && blanket.length === 0 && !lookupLoaded;
-      if (needsLookup && q.length < 2) {
-        domainCount.textContent = "Type a website to look it up — for example amazon.com.";
+      const lang = $('[data-filter="domain-language"]').value;
+      const country = $('[data-filter="domain-country"]').value;
+      const vertical = $('[data-filter="domain-vertical"]').value;
+      const sliced = Boolean(lang || country || vertical);
+      const hasBakedRows = named.length > 0 || blanket.length > 0;
+      if (!hasBakedRows && !lookupLoaded && q.length < 2 && !sliced) {
+        domainCount.textContent = "Type a website, or pick language / news / a labeled country.";
         domainBody.innerHTML =
-          `<tr><td colspan="5" class="empty-cell">Website rows load when you search. Totals in By bot are already live.</td></tr>`;
+          `<tr><td colspan="5" class="empty-cell">Website rows load when you search or filter. Language is not country. News is only the labeled list.</td></tr>`;
         return;
       }
-      if (needsLookup) {
+      if (!lookupLoaded && (!hasBakedRows || sliced)) {
         domainCount.textContent = "Looking up…";
         domainBody.innerHTML = `<tr><td colspan="5" class="empty-cell">Looking up websites…</td></tr>`;
         ensureLookup()
@@ -332,7 +425,7 @@ const payload = JSON.stringify({
     }
     function gptbotNamedDomains() {
       const out = new Set<string>();
-      if (lookupLoaded) {
+      if (namedTriples.length) {
         for (const [domain, slug] of namedTriples) {
           if (slug === "openai-gptbot") out.add(domain);
         }
@@ -348,6 +441,9 @@ const payload = JSON.stringify({
       const agent = $('[data-filter="domain-agent"]').value;
       const state = $('[data-filter="domain-state"]').value;
       const purposeFilter = $('[data-filter="domain-purpose"]').value;
+      const langFilter = $('[data-filter="domain-language"]').value;
+      const countryFilter = $('[data-filter="domain-country"]').value;
+      const verticalFilter = $('[data-filter="domain-vertical"]').value;
       const collapse = (root!.querySelector('[data-filter="collapse-amazon"]') as HTMLInputElement).checked;
       const namedGpt = agent === "openai-gptbot" ? gptbotNamedDomains() : null;
       const seen = new Set<string>();
@@ -365,6 +461,11 @@ const payload = JSON.stringify({
         }
         if (state && row.state !== state) return;
         if (purposeFilter && row.purpose !== purposeFilter) return;
+        const site = siteOf(row.domain);
+        if (langFilter === "unknown" && site.language) return;
+        if (langFilter && langFilter !== "unknown" && site.language !== langFilter) return;
+        if (countryFilter && site.country !== countryFilter) return;
+        if (verticalFilter && site.vertical !== verticalFilter) return;
         if (collapse) {
           const key = `${row.group_key}|${row.agent_slug || row.token}|${row.state}`;
           if (seen.has(key)) return;
@@ -374,7 +475,7 @@ const payload = JSON.stringify({
         if (shown.length < MAX_DOMAIN_ROWS) shown.push(row);
       }
 
-      if (lookupLoaded) {
+      if (namedTriples.length || blanketTriples.length) {
         for (const [domain, slug, rowState] of namedTriples) consider(hydrateNamed(domain, slug, rowState));
         for (const [domain, rowState] of blanketTriples) consider(hydrateBlanket(domain, rowState));
       } else {

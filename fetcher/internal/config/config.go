@@ -90,7 +90,10 @@ func Load(path string) (Config, error) {
 			"robots_txt":  1 << 20,
 			"llms_txt":    2 << 20,
 			"sitemap_xml": 10 << 20,
+			"html_home":   512 << 10,
 		}
+	} else if _, ok := cfg.Fetcher.SizeCapsBytes["html_home"]; !ok {
+		cfg.Fetcher.SizeCapsBytes["html_home"] = 512 << 10
 	}
 	if cfg.Storage.Root == "" {
 		cfg.Storage.Root = "data/store"
