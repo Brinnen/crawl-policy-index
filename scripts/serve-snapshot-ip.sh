@@ -23,6 +23,9 @@ server {
     listen 80 default_server;
     listen [::]:80 default_server;
     server_name _;
+    gzip on;
+    gzip_types application/json;
+    gzip_min_length 256;
 
     location = /snapshot/lab.json {
         alias /var/www/cpi/snapshot/lab.json;
@@ -34,6 +37,8 @@ server {
     location /snapshot/ {
         alias /var/www/cpi/snapshot/;
         default_type application/json;
+        gzip on;
+        gzip_types application/json;
         add_header Access-Control-Allow-Origin "*" always;
         add_header Cache-Control "public, max-age=60" always;
     }
@@ -58,4 +63,10 @@ import json, urllib.request
 raw = urllib.request.urlopen("http://127.0.0.1/snapshot/lab.json", timeout=10).read()
 data = json.loads(raw)
 print("ok", data.get("panel_version"), data.get("summary", {}).get("panel_size"))
+try:
+    lookup = urllib.request.urlopen("http://127.0.0.1/snapshot/lookup.json", timeout=30).read()
+    pack = json.loads(lookup)
+    print("lookup named", len(pack.get("named") or []), "blanket", len(pack.get("blanket") or []))
+except Exception as exc:
+    print("lookup missing:", exc)
 PY

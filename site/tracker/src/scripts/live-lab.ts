@@ -1,6 +1,7 @@
 import { PURPOSE_LABELS, STATE_LABELS } from "../lib/labels";
 
 export const SNAPSHOT_URL = "/snapshot/lab.json";
+export const LOOKUP_URL = "/snapshot/lookup.json";
 
 export type LabRow = {
   domain?: string;
@@ -159,26 +160,21 @@ function redrawChart(root: HTMLElement, s: Record<string, number | null>) {
   }
 }
 
-function applyDomainPage(lab: LabSnapshot) {
-  const host = document.querySelector<HTMLElement>("[data-domain-page]");
-  if (!host) return;
-  const fromAttr = host.getAttribute("data-domain-page") || "";
-  const match = location.pathname.match(/\/domain\/([^/]+)/);
-  const domain = fromAttr || (match ? decodeURIComponent(match[1]) : "");
-  const heading = document.querySelector("[data-domain-heading]");
-  const body = host.querySelector("[data-domain-rows]");
-  if (!domain) {
-    if (heading) heading.textContent = "Pick a website";
-    if (body) {
-      body.innerHTML = `<tr><td colspan="5" class="empty-cell">Open a website from Explore.</td></tr>`;
-    }
-    return;
-  }
-  if (heading) heading.textContent = domain;
-  if (!body) return;
-  const named = lab.named || [];
-  const blanket = lab.blanket || [];
-  const rows = [...named, ...blanket].filter((row) => row.domain === domain);
+function groupKey(domain: string) {
+  const host = domain.toLowerCase().replace(/\.$/, "");
+  if (host === "amazon.com" || host.startsWith("amazon.")) return "amazon.com";
+  return host;
+}
+
+function rowsForDomain(
+  domain: string,
+  named: LabRow[],
+  blanket: LabRow[],
+): LabRow[] {
+  return [...named, ...blanket].filter((row) => row.domain === domain);
+}
+
+function paintDomainRows(body: Element, rows: LabRow[]) {
   if (rows.length === 0) {
     body.innerHTML = `<tr><td colspan="5" class="empty-cell">No named bot rule for this website in the current panel.</td></tr>`;
     return;
@@ -198,6 +194,83 @@ function applyDomainPage(lab: LabSnapshot) {
       </tr>`;
     })
     .join("");
+}
+
+function loadLookupRows(
+  agents: LabAgent[],
+  domain: string,
+): Promise<{ named: LabRow[]; blanket: LabRow[] }> {
+  return fetch(LOOKUP_URL, { cache: "no-store" })
+    .then((res) => {
+      if (!res.ok) throw new Error(String(res.status));
+      return res.json() as Promise<{ named?: [string, string, string][]; blanket?: [string, string][] }>;
+    })
+    .then((pack) => {
+      const meta: Record<string, LabAgent> = {};
+      for (const a of agents) meta[a.slug] = a;
+      const named: LabRow[] = [];
+      for (const [host, slug, state] of pack.named || []) {
+        if (host !== domain) continue;
+        const m = meta[slug];
+        named.push({
+          domain: host,
+          agent_slug: slug,
+          state,
+          kind: "named",
+          token: m?.token || slug,
+          agent: m?.agent || slug,
+          operator: m?.operator || "—",
+          purpose: m?.purpose,
+          group_key: groupKey(host),
+        });
+      }
+      const blanket: LabRow[] = [];
+      for (const [host, state] of pack.blanket || []) {
+        if (host !== domain) continue;
+        blanket.push({
+          domain: host,
+          state,
+          kind: "blanket",
+          agent_slug: "wildcard-star",
+          token: "All bots (*)",
+          agent: "All bots",
+          operator: "Site-wide rule",
+          purpose: "blanket",
+          group_key: groupKey(host),
+        });
+      }
+      return { named, blanket };
+    });
+}
+
+function applyDomainPage(lab: LabSnapshot) {
+  const host = document.querySelector<HTMLElement>("[data-domain-page]");
+  if (!host) return;
+  const fromAttr = host.getAttribute("data-domain-page") || "";
+  const match = location.pathname.match(/\/domain\/([^/]+)/);
+  const domain = fromAttr || (match ? decodeURIComponent(match[1]) : "");
+  const heading = document.querySelector("[data-domain-heading]");
+  const body = host.querySelector("[data-domain-rows]");
+  if (!domain) {
+    if (heading) heading.textContent = "Pick a website";
+    if (body) {
+      body.innerHTML = `<tr><td colspan="5" class="empty-cell">Open a website from Explore.</td></tr>`;
+    }
+    return;
+  }
+  if (heading) heading.textContent = domain;
+  if (!body) return;
+  const named = lab.named || [];
+  const blanket = lab.blanket || [];
+  const rows = rowsForDomain(domain, named, blanket);
+  if (rows.length > 0) {
+    paintDomainRows(body, rows);
+    return;
+  }
+  body.innerHTML = `<tr><td colspan="5" class="empty-cell">Looking up…</td></tr>`;
+  loadLookupRows(lab.by_agent || [], domain)
+    .then((pack) => paintDomainRows(body, [...pack.named, ...pack.blanket]))
+    .catch(() => paintDomainRows(body, []));
 }
 
 export function bootLiveLab(url: string) {

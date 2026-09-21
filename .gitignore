@@ -27,6 +27,7 @@ pgdata/
 minio_data/
 *.log
 
+site/tracker/src/data/lookup.json
 site/tracker/node_modules/
 site/tracker/dist/
 site/tracker/.astro/

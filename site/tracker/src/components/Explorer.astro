@@ -89,11 +89,11 @@ const payload = JSON.stringify({
 
   <section class="panel">
     <h2>By website</h2>
-    <p class="sub">Named bots, and sites that only said “block all bots.” Filter GPTBot to include those blanket rules — they are labelled as such, not as a GPTBot-specific no.</p>
+    <p class="sub">Type a website to see what it wrote. Named bots sit next to a blanket “block all bots” rule.</p>
     <div class="filters">
       <label class="field">
         <span>Website</span>
-        <input type="search" data-filter="domain-q" placeholder="nytimes.com" autocomplete="off" />
+        <input type="search" data-filter="domain-q" placeholder="amazon.com or nytimes" autocomplete="off" />
       </label>
       <label class="field">
         <span>Bot</span>
@@ -156,6 +156,70 @@ const payload = JSON.stringify({
     const domainBody = root.querySelector("[data-domain-body]") as HTMLElement;
     const agentCount = root.querySelector("[data-agent-count]") as HTMLElement;
     const domainCount = root.querySelector("[data-domain-count]") as HTMLElement;
+    const LOOKUP_URL = "/snapshot/lookup.json";
+    const MAX_DOMAIN_ROWS = 250;
+    let lookupPromise: Promise<void> | null = null;
+    let lookupLoaded = false;
+    let namedTriples: [string, string, string][] = [];
+    let blanketTriples: [string, string][] = [];
+    let agentMeta: Record<string, { token: string; agent: string; operator: string; purpose: string }> = {};
+
+    function rebuildMeta() {
+      agentMeta = {};
+      for (const a of agents) {
+        agentMeta[a.slug] = { token: a.token, agent: a.agent, operator: a.operator, purpose: a.purpose };
+      }
+    }
+    rebuildMeta();
+
+    function groupKey(domain: string) {
+      const host = domain.toLowerCase().replace(/\.$/, "");
+      if (host === "amazon.com" || host.startsWith("amazon.")) return "amazon.com";
+      return host;
+    }
+    function hydrateNamed(domain: string, slug: string, state: string) {
+      const m = agentMeta[slug];
+      return {
+        domain,
+        agent_slug: slug,
+        state,
+        kind: "named",
+        token: m?.token || slug,
+        agent: m?.agent || slug,
+        operator: m?.operator || "—",
+        purpose: m?.purpose,
+        group_key: groupKey(domain),
+      };
+    }
+    function hydrateBlanket(domain: string, state: string) {
+      return {
+        domain,
+        state,
+        kind: "blanket",
+        agent_slug: "wildcard-star",
+        token: "All bots (*)",
+        agent: "All bots",
+        operator: "Site-wide rule",
+        purpose: "blanket",
+        group_key: groupKey(domain),
+      };
+    }
+    function ensureLookup() {
+      if (named.length || blanket.length || lookupLoaded) return Promise.resolve();
+      if (!lookupPromise) {
+        lookupPromise = fetch(LOOKUP_URL, { cache: "no-store" })
+          .then((res) => {
+            if (!res.ok) throw new Error(String(res.status));
+            return res.json() as Promise<{ named?: [string, string, string][]; blanket?: [string, string][] }>;
+          })
+          .then((pack) => {
+            namedTriples = pack.named || [];
+            blanketTriples = pack.blanket || [];
+            lookupLoaded = true;
+          });
+      }
+      return lookupPromise;
+    }
 
     function num(n: number | null | undefined) {
       if (n === null || n === undefined) return "—";
@@ -245,52 +309,101 @@ const payload = JSON.stringify({
     }
     function renderDomains() {
       const q = $('[data-filter="domain-q"]').value.trim().toLowerCase();
+      const needsLookup = named.length === 0 && blanket.length === 0 && !lookupLoaded;
+      if (needsLookup && q.length < 2) {
+        domainCount.textContent = "Type a website to look it up — for example amazon.com.";
+        domainBody.innerHTML =
+          `<tr><td colspan="5" class="empty-cell">Website rows load when you search. Totals in By bot are already live.</td></tr>`;
+        return;
+      }
+      if (needsLookup) {
+        domainCount.textContent = "Looking up…";
+        domainBody.innerHTML = `<tr><td colspan="5" class="empty-cell">Looking up websites…</td></tr>`;
+        ensureLookup()
+          .then(() => paintDomains())
+          .catch(() => {
+            domainCount.textContent = "Website lookup is not available yet.";
+            domainBody.innerHTML =
+              `<tr><td colspan="5" class="empty-cell">Could not load website rows. Try again in a minute.</td></tr>`;
+          });
+        return;
+      }
+      paintDomains();
+    }
+    function gptbotNamedDomains() {
+      const out = new Set<string>();
+      if (lookupLoaded) {
+        for (const [domain, slug] of namedTriples) {
+          if (slug === "openai-gptbot") out.add(domain);
+        }
+        return out;
+      }
+      for (const r of named) {
+        if (r.agent_slug === "openai-gptbot") out.add(r.domain);
+      }
+      return out;
+    }
+    function paintDomains() {
+      const q = $('[data-filter="domain-q"]').value.trim().toLowerCase();
       const agent = $('[data-filter="domain-agent"]').value;
       const state = $('[data-filter="domain-state"]').value;
       const purposeFilter = $('[data-filter="domain-purpose"]').value;
       const collapse = (root!.querySelector('[data-filter="collapse-amazon"]') as HTMLInputElement).checked;
-      const namedGpt = new Set(
-        named.filter((r: { agent_slug?: string }) => r.agent_slug === "openai-gptbot").map((r: { domain: string }) => r.domain),
-      );
-      const source = [
-        ...named.map((r: { kind?: string }) => ({ ...r, kind: r.kind || "named" })),
-        ...blanket,
-      ];
+      const namedGpt = agent === "openai-gptbot" ? gptbotNamedDomains() : null;
       const seen = new Set<string>();
-      const rows = source.filter((r: { domain: string; group_key?: string; agent_slug?: string; token?: string; state: string; purpose?: string; kind?: string }) => {
-        if (q && !r.domain.toLowerCase().includes(q) && !(r.group_key || "").toLowerCase().includes(q)) return false;
+      const shown: ReturnType<typeof hydrateNamed>[] = [];
+      let total = 0;
+
+      function consider(row: ReturnType<typeof hydrateNamed>) {
+        if (q && !row.domain.toLowerCase().includes(q) && !(row.group_key || "").toLowerCase().includes(q)) return;
         if (agent === "openai-gptbot") {
-          const namedHit = r.agent_slug === "openai-gptbot";
-          const inherited = r.kind === "blanket" && !namedGpt.has(r.domain);
-          if (!namedHit && !inherited) return false;
-        } else if (agent && r.agent_slug !== agent) {
-          return false;
+          const namedHit = row.agent_slug === "openai-gptbot";
+          const inherited = row.kind === "blanket" && namedGpt != null && !namedGpt.has(row.domain);
+          if (!namedHit && !inherited) return;
+        } else if (agent && row.agent_slug !== agent) {
+          return;
         }
-        if (state && r.state !== state) return false;
-        if (purposeFilter && r.purpose !== purposeFilter) return false;
+        if (state && row.state !== state) return;
+        if (purposeFilter && row.purpose !== purposeFilter) return;
         if (collapse) {
-          const key = `${r.group_key}|${r.agent_slug || r.token}|${r.state}`;
-          if (seen.has(key)) return false;
+          const key = `${row.group_key}|${row.agent_slug || row.token}|${row.state}`;
+          if (seen.has(key)) return;
           seen.add(key);
         }
-        return true;
-      });
-      const total = source.length;
+        total += 1;
+        if (shown.length < MAX_DOMAIN_ROWS) shown.push(row);
+      }
+
+      if (lookupLoaded) {
+        for (const [domain, slug, rowState] of namedTriples) consider(hydrateNamed(domain, slug, rowState));
+        for (const [domain, rowState] of blanketTriples) consider(hydrateBlanket(domain, rowState));
+      } else {
+        for (const r of named) {
+          consider({
+            domain: r.domain,
+            agent_slug: r.agent_slug || "openai-gptbot",
+            state: r.state,
+            kind: r.kind || "named",
+            token: r.token || r.agent || "GPTBot",
+            agent: r.agent || r.token || "GPTBot",
+            operator: r.operator || "—",
+            purpose: r.purpose,
+            group_key: r.group_key || groupKey(r.domain),
+          });
+        }
+        for (const r of blanket) consider(hydrateBlanket(r.domain, r.state));
+      }
       domainCount.textContent =
-        total === 0
-          ? "Website-by-website rows stay off this page at this list size. Totals above are live."
-          : `Showing ${rows.length} of ${total} website rules`;
-      if (rows.length === 0) {
-        domainBody.innerHTML = `<tr><td colspan="5" class="empty-cell">${
-          total === 0
-            ? "Site-by-site rows are not loaded in the browser for this list size."
-            : "Nothing matches these filters. Try All bots, or clear the website search."
-        }</td></tr>`;
+        total > MAX_DOMAIN_ROWS
+          ? `Showing ${shown.length} of ${total} matching website rules. Type more of the name to narrow it.`
+          : `Showing ${total} website rule${total === 1 ? "" : "s"}`;
+      if (shown.length === 0) {
+        domainBody.innerHTML = `<tr><td colspan="5" class="empty-cell">Nothing matches. Try a shorter name, or All bots.</td></tr>`;
         return;
       }
-      domainBody.innerHTML = rows
+      domainBody.innerHTML = shown
         .map(
-          (r: { domain: string; token?: string; agent?: string; operator?: string; purpose?: string; state: string; kind?: string }) =>
+          (r) =>
             `<tr>
               <td><a href="/domain/${encodeURIComponent(r.domain)}">${esc(r.domain)}</a></td>
               <td>${esc(r.token || r.agent || "GPTBot")}</td>
@@ -348,16 +461,18 @@ const payload = JSON.stringify({
       const lab = (event as CustomEvent).detail;
       if (!lab) return;
       agents = lab.by_agent || agents;
-      named = lab.named || named;
-      blanket = lab.blanket || blanket;
+      rebuildMeta();
+      if (lab.named && lab.named.length) named = lab.named;
+      if (lab.blanket && lab.blanket.length) blanket = lab.blanket;
       syncFilters();
       render();
     });
     if (window.__CPI_LAB) {
       const live = window.__CPI_LAB;
       agents = live.by_agent || agents;
-      named = live.named || named;
-      blanket = live.blanket || blanket;
+      rebuildMeta();
+      if (live.named && live.named.length) named = live.named;
+      if (live.blanket && live.blanket.length) blanket = live.blanket;
       syncFilters();
     }
     applyUrl();

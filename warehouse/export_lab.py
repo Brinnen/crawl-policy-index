@@ -4,11 +4,9 @@ Called by scripts/daily-run.sh after warehouse-once.sh. Writes:
 
     site/tracker/src/data/lab.json
 
-scripts/publish-lab.sh copies that file to /var/www/cpi/snapshot/lab.json
-(the live numbers). The tracker fetches that URL in the browser.
-
-The tracker does not publish this file as a download. It is a build input
-and a snapshot payload.
+scripts/publish-lab.sh copies lab.json and lookup.json to
+/var/www/cpi/snapshot/. lookup.json is the website search index
+(compact triples). It is not embedded in the tracker HTML.
 """
 
 from __future__ import annotations
@@ -67,6 +65,34 @@ WHERE a.verified
 GROUP BY a.slug, a.ua_token, a.display_name, a.operator, a.purpose
 ORDER BY count(*) FILTER (WHERE pi.state = 'BLOCKED') DESC, a.operator, a.slug
 """
+
+LOOKUP_NAMED_SQL = """
+SELECT pi.domain, a.slug, pi.state::text
+FROM policy_interval pi
+JOIN agent a ON a.slug = pi.agent_slug
+JOIN panel_domain pd
+  ON pd.domain = pi.domain AND pd.panel_version = %s
+WHERE pi.valid_to IS NULL
+  AND a.verified
+  AND a.active
+"""
+
+LOOKUP_BLANKET_SQL = """
+SELECT wi.domain, wi.state::text
+FROM wildcard_interval wi
+JOIN panel_domain pd
+  ON pd.domain = wi.domain AND pd.panel_version = %s
+WHERE wi.valid_to IS NULL
+  AND wi.has_wildcard_group
+  AND wi.state = 'BLOCKED'
+"""
+
+
+def write_lookup(path: Path, named: list, blanket: list) -> None:
+    path.write_text(
+        json.dumps({"named": named, "blanket": blanket}, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -209,6 +235,10 @@ def main(argv: list[str] | None = None) -> int:
                 (panel,),
             )
             gptbot_blanket = cur.fetchone()[0]
+            cur.execute(LOOKUP_NAMED_SQL, (panel,))
+            lookup_named = [[domain, slug, state] for domain, slug, state in cur.fetchall()]
+            cur.execute(LOOKUP_BLANKET_SQL, (panel,))
+            lookup_blanket = [[domain, state] for domain, state in cur.fetchall()]
             include_rows = panel_size <= 5000
             named: list[dict] = []
             blanket: list[dict] = []
@@ -330,10 +360,13 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    lookup_path = out.with_name("lookup.json")
+    write_lookup(lookup_path, lookup_named, lookup_blanket)
     print(
         f"wrote {out} panel={panel} size={panel_size} "
         f"({len(named)} named rows, {len(blanket)} block-all-bots, {len(by_agent)} agents)"
     )
+    print(f"wrote {lookup_path} lookup named={len(lookup_named)} blanket={len(lookup_blanket)}")
     return 0
 
 

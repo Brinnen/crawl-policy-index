@@ -18,6 +18,14 @@ if mkdir -p /var/www/cpi/snapshot 2>/dev/null; then
   cp "$ROOT/$FILE" /var/www/cpi/snapshot/lab.json
   chmod 644 /var/www/cpi/snapshot/lab.json
   echo "snapshot https://crawlpolicyindex.org/snapshot/lab.json"
+  LOOKUP="$ROOT/site/tracker/src/data/lookup.json"
+  if [[ -f "$LOOKUP" ]]; then
+    cp "$LOOKUP" /var/www/cpi/snapshot/lookup.json
+    chmod 644 /var/www/cpi/snapshot/lookup.json
+    echo "snapshot https://crawlpolicyindex.org/snapshot/lookup.json"
+  else
+    echo "WARNING: missing $LOOKUP — Explore website search will be empty" >&2
+  fi
   published=1
 else
   echo "WARNING: could not write /var/www/cpi/snapshot/lab.json" >&2
