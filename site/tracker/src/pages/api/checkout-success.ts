@@ -4,7 +4,12 @@ import Stripe from "stripe";
 
 export const GET: APIRoute = async (context) => {
   const { locals, redirect, url } = context;
-  const { userId } = locals.auth();
+  let userId: string | null = null;
+  try {
+    userId = locals.auth?.()?.userId ?? null;
+  } catch {
+    userId = null;
+  }
   if (!userId) return redirect("/sign-in");
 
   const secret = import.meta.env.STRIPE_SECRET_KEY;

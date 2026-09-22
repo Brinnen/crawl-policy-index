@@ -9,6 +9,7 @@ export default defineConfig({
       signUpUrl: "/sign-up",
       signInFallbackRedirectUrl: "/app",
       signUpFallbackRedirectUrl: "/pricing",
+      enableEnvSchema: false,
     }),
   ],
   adapter: vercel(),

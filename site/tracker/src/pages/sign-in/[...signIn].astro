@@ -1,9 +1,14 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { SignIn } from "@clerk/astro/components";
+import { CLERK_ENABLED } from "../../lib/clerk";
 ---
 <Layout title="Sign in — Crawl Policy Index" description="Sign in to Crawl Policy Index.">
   <div class="auth-box">
-    <SignIn path="/sign-in" fallbackRedirectUrl="/app" />
+    {CLERK_ENABLED ? (
+      <SignIn path="/sign-in" fallbackRedirectUrl="/app" />
+    ) : (
+      <p class="lede">Accounts are not live on this deploy yet. The sample table is free on the homepage.</p>
+    )}
   </div>
 </Layout>

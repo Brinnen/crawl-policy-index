@@ -2,11 +2,16 @@ import type { APIRoute } from "astro";
 import Stripe from "stripe";
 
 export const GET: APIRoute = async ({ locals, redirect, url }) => {
-  const { userId } = locals.auth();
+  let userId: string | null = null;
+  try {
+    userId = locals.auth?.()?.userId ?? null;
+  } catch {
+    userId = null;
+  }
   if (!userId) return redirect("/sign-in");
 
   const secret = import.meta.env.STRIPE_SECRET_KEY;
-  const price = import.meta.env.STRIPE_PRICE_ID;
+  const price = import.meta.env.STRIPE_PRICE_ID || "price_1UIP4wCuAgBI9dTCek0CwS0k";
   if (!secret || !price) {
     return new Response("Stripe is not configured yet. Add STRIPE_SECRET_KEY and STRIPE_PRICE_ID.", {
       status: 503,

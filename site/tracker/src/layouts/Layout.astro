@@ -5,6 +5,7 @@ import "@fontsource/ibm-plex-mono/500.css";
 import { Show, SignInButton, UserButton } from "@clerk/astro/components";
 import "../styles/global.css";
 import lab from "../data/lab.json";
+import { CLERK_ENABLED } from "../lib/clerk";
 
 interface Props {
   title: string;
@@ -75,14 +76,20 @@ const exportedDate = new Date(lab.generated_at).toLocaleDateString("en-GB", {
                 {item.label}
               </a>
             ))}
-            <Show when="signed-out">
-              <SignInButton mode="redirect" class="nav-text">Sign in</SignInButton>
-              <a class="btn btn-primary btn-nav" href="/sign-up">Subscribe</a>
-            </Show>
-            <Show when="signed-in">
-              <a href="/app">Full table</a>
-              <UserButton />
-            </Show>
+            {CLERK_ENABLED ? (
+              <>
+                <Show when="signed-out">
+                  <SignInButton mode="redirect" class="nav-text">Sign in</SignInButton>
+                  <a class="btn btn-primary btn-nav" href="/sign-up">Subscribe</a>
+                </Show>
+                <Show when="signed-in">
+                  <a href="/app">Full table</a>
+                  <UserButton />
+                </Show>
+              </>
+            ) : (
+              <a class="btn btn-primary btn-nav" href="/pricing">Subscribe</a>
+            )}
           </nav>
         </div>
       </header>

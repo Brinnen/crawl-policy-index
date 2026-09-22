@@ -2,12 +2,18 @@
 import Layout from "../layouts/Layout.astro";
 import MarketTable from "../components/MarketTable.astro";
 import { isSubscribed } from "../lib/access";
+import { userIdFromLocals } from "../lib/clerk";
 import lab from "../data/lab.json";
 
-const { userId } = Astro.locals.auth();
+const userId = userIdFromLocals(Astro.locals);
 if (!userId) return Astro.redirect("/sign-in");
 
-const user = await Astro.locals.currentUser();
+let user: { publicMetadata?: Record<string, unknown> } | null = null;
+try {
+  user = (await Astro.locals.currentUser?.()) ?? null;
+} catch {
+  user = null;
+}
 if (!isSubscribed(user)) return Astro.redirect("/pricing");
 
 const agents = lab.by_agent ?? [];
