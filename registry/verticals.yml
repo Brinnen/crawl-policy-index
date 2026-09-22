@@ -94,6 +94,9 @@ news_domains:
   - { domain: bloomberg.com, country: US }
   - { domain: politico.com, country: US }
   - { domain: theatlantic.com, country: US }
+  - { domain: foxnews.com, country: US }
+  - { domain: forbes.com, country: US }
+  - { domain: thetimes.co.uk, country: GB }
   # Germany / France / Spain / Italy / Netherlands
   - { domain: spiegel.de, country: DE }
   - { domain: zeit.de, country: DE }
@@ -115,6 +118,10 @@ news_domains:
   - { domain: cbc.ca, country: CA }
   - { domain: asahi.com, country: JP }
   - { domain: nhk.or.jp, country: JP }
+  - { domain: nikkei.com, country: JP }
+  - { domain: thestar.com, country: CA }
+  - { domain: globo.com, country: BR }
+  - { domain: bild.de, country: DE }
   - { domain: straitstimes.com, country: SG }
   - { domain: haaretz.com, country: IL }
   - { domain: aljazeera.com, country: QA }

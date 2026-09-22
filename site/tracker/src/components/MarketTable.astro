@@ -256,7 +256,24 @@ const preview = mode === "preview";
           fetch("/snapshot/preview.json", { cache: "no-store" })
             .then((res) => (res.ok ? res.json() : null))
             .then((live) => {
-              if (live && (live.sites || []).length) paint(live);
+              if (!live) return;
+              const liveBy = new Map((live.sites || []).map((row) => [row[0], row]));
+              const sites = (pack.sites || []).map((row) => {
+                const liveRow = liveBy.get(row[0]);
+                if (!liveRow) return row;
+                return [
+                  row[0],
+                  liveRow[1] || row[1],
+                  liveRow[2] || row[2],
+                  liveRow[3] && liveRow[3] !== "other" ? liveRow[3] : row[3] || liveRow[3] || "other",
+                ];
+              });
+              paint({
+                ...pack,
+                named: live.named && live.named.length ? live.named : pack.named,
+                blanket: live.blanket && live.blanket.length ? live.blanket : pack.blanket,
+                sites,
+              });
             })
             .catch(() => {});
         }

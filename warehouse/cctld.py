@@ -100,11 +100,11 @@ def country_from_domain(domain: str) -> str:
 
 
 def category_from_domain(domain: str, labeled: str = "") -> str:
-    if labeled and labeled != "other":
-        return labeled
     host = (domain or "").strip().lower()
     if host.endswith(".edu") or ".ac." in host or host.endswith(".ac.uk"):
         return "edu"
     if host.endswith(".gov") or ".gov." in host:
         return "gov"
+    if labeled and labeled != "other":
+        return labeled
     return "other"

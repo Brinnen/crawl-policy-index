@@ -5,28 +5,27 @@ from __future__ import annotations
 import re
 
 NEWS_JSON = re.compile(
-    r"NewsMediaOrganization|NewsArticle|ReportageNewsArticle",
+    r"NewsMediaOrganization|ReportageNewsArticle",
     re.I,
 )
-SHOP_JSON = re.compile(r"OnlineStore", re.I)
-EDU_JSON = re.compile(r"CollegeOrUniversity|EducationalOrganization", re.I)
+SHOP_JSON = re.compile(r'"@type"\s*:\s*"OnlineStore"', re.I)
+EDU_JSON = re.compile(r"CollegeOrUniversity", re.I)
 GOV_JSON = re.compile(r"GovernmentOrganization", re.I)
 
 NEWS_WORDS = re.compile(
-    r"\b(breaking news|latest news|newspaper|nyheter|tidning|zeitung|"
-    r"noticias|newsroom|newswire)\b",
+    r"\b(breaking news|newspaper|tidning|zeitung|noticias|newswire)\b",
     re.I,
 )
 SHOP_WORDS = re.compile(
-    r"\b(add to cart|shopping cart|checkout|webshop|web shop|online store|buy now)\b",
+    r"\b(add to cart|webshop|web shop)\b",
     re.I,
 )
 EDU_WORDS = re.compile(
-    r"\b(university|universitet|universidad|université|college|campus)\b",
+    r"\b(university of|universitet|universidad|université)\b",
     re.I,
 )
 GOV_WORDS = re.compile(
-    r"\b(government|regering|regeringen|ministerium|ministry of|kommun)\b",
+    r"\b(regeringen|ministerium|ministry of)\b",
     re.I,
 )
 
