@@ -4,9 +4,10 @@ Called by scripts/daily-run.sh after warehouse-once.sh. Writes:
 
     site/tracker/src/data/lab.json
 
-scripts/publish-lab.sh copies lab.json, lookup.json, and preview.json to
-/var/www/cpi/snapshot/. lookup.json is the website search index
-(compact triples). preview.json is the public 100-site sample.
+scripts/publish-lab.sh copies lab.json, lookup.json, preview.json, and
+events.json to /var/www/cpi/snapshot/. lookup.json is the website search
+index (compact triples). preview.json is the public 100-site sample.
+events.json is the paid history change log.
 """
 
 from __future__ import annotations
@@ -111,6 +112,30 @@ def write_lookup(path: Path, named: list, blanket: list, sites: list | None = No
     )
 
 
+EVENTS_SQL = """
+SELECT
+    pe.occurred_on::text,
+    pe.domain,
+    COALESCE(pe.agent_slug, ''),
+    pe.kind::text,
+    COALESCE(pe.prev_state::text, ''),
+    COALESCE(pe.new_state::text, '')
+FROM policy_event pe
+JOIN panel_domain pd
+  ON pd.domain = pe.domain AND pd.panel_version = %s
+WHERE pe.occurred_on >= current_date - 180
+ORDER BY pe.occurred_on DESC, pe.id DESC
+LIMIT 25000
+"""
+
+
+def write_events(path: Path, events: list) -> None:
+    path.write_text(
+        json.dumps({"events": events}, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
+
+
 PREVIEW_HOSTS_SQL = """
 SELECT domain
 FROM panel_domain
@@ -151,6 +176,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--panel-version", default="sites1000")
     args = p.parse_args(argv)
     panel = args.panel_version
+    lookup_events: list[list[str]] = []
 
     import psycopg
 
@@ -288,6 +314,14 @@ def main(argv: list[str] | None = None) -> int:
             lookup_named = [[domain, slug, state] for domain, slug, state in cur.fetchall()]
             cur.execute(LOOKUP_BLANKET_SQL, (panel,))
             lookup_blanket = [[domain, state] for domain, state in cur.fetchall()]
+            lookup_events: list[list[str]] = []
+            cur.execute("SAVEPOINT events")
+            try:
+                cur.execute(EVENTS_SQL, (panel,))
+                lookup_events = [list(row) for row in cur.fetchall()]
+                cur.execute("RELEASE SAVEPOINT events")
+            except Exception:
+                cur.execute("ROLLBACK TO SAVEPOINT events")
             lookup_sites: list[list[str]] = []
             preview_hosts: list[str] = []
             language_known = 0
@@ -490,6 +524,8 @@ def main(argv: list[str] | None = None) -> int:
     out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     lookup_path = out.with_name("lookup.json")
     write_lookup(lookup_path, lookup_named, lookup_blanket, lookup_sites)
+    events_path = out.with_name("events.json")
+    write_events(events_path, lookup_events)
     preview_path = out.with_name("preview.json")
     if preview_hosts:
         hostset = set(preview_hosts)
@@ -511,6 +547,7 @@ def main(argv: list[str] | None = None) -> int:
         f"wrote {lookup_path} lookup named={len(lookup_named)} "
         f"blanket={len(lookup_blanket)} sites={len(lookup_sites)}"
     )
+    print(f"wrote {events_path} events={len(lookup_events)}")
     return 0
 
 

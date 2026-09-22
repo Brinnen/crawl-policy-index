@@ -1,34 +1,44 @@
 import type { APIRoute } from "astro";
-import { clerkClient } from "@clerk/astro/server";
 import Stripe from "stripe";
+import { clerkClient } from "@clerk/astro/server";
+import { CLERK_ENABLED, userIdFromLocals } from "../../lib/clerk";
+import { planFromPriceId } from "../../lib/access";
 
-export const GET: APIRoute = async (context) => {
-  const { locals, redirect, url } = context;
-  let userId: string | null = null;
-  try {
-    userId = locals.auth?.()?.userId ?? null;
-  } catch {
-    userId = null;
-  }
-  if (!userId) return redirect("/sign-in");
+export const prerender = false;
 
-  const secret = import.meta.env.STRIPE_SECRET_KEY;
+export const GET: APIRoute = async ({ locals, request }) => {
+  const userId = userIdFromLocals(locals);
+  const url = new URL(request.url);
   const sessionId = url.searchParams.get("session_id");
-  if (!secret || !sessionId) return redirect("/pricing");
-
-  const stripe = new Stripe(secret);
-  const session = await stripe.checkout.sessions.retrieve(sessionId);
-  if (session.client_reference_id !== userId) return redirect("/pricing");
-  if (session.status !== "complete" && session.payment_status === "unpaid") {
-    return redirect("/pricing");
+  if (!CLERK_ENABLED || !userId || !sessionId || !import.meta.env.STRIPE_SECRET_KEY) {
+    return new Response(null, { status: 302, headers: { Location: "/app" } });
   }
 
-  const client = clerkClient(context);
-  await client.users.updateUserMetadata(userId, {
+  const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY);
+  const session = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ["line_items.data.price"],
+  });
+  if (session.client_reference_id !== userId || session.status !== "complete") {
+    return new Response(null, { status: 302, headers: { Location: "/pricing" } });
+  }
+
+  const priceId = session.line_items?.data?.[0]?.price?.id;
+  const plan =
+    session.metadata?.plan === "history" || session.metadata?.plan === "table"
+      ? session.metadata.plan
+      : planFromPriceId(priceId);
+
+  const customerId =
+    typeof session.customer === "string" ? session.customer : session.customer?.id;
+  await clerkClient(locals).users.updateUserMetadata(userId, {
     publicMetadata: {
       subscribed: true,
-      stripeCustomerId: typeof session.customer === "string" ? session.customer : undefined,
+      plan,
+      stripeCustomerId: customerId,
     },
   });
-  return redirect("/app");
+  return new Response(null, {
+    status: 302,
+    headers: { Location: plan === "history" ? "/history" : "/app" },
+  });
 };

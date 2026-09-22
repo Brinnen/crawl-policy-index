@@ -1,0 +1,159 @@
+interface Props {
+  agents: { slug: string; token: string; operator: string }[];
+}
+
+const { agents } = Astro.props;
+const bots = [...agents].filter((a) => a.slug !== "wildcard-star").sort((a, b) => a.token.localeCompare(b.token));
+const payload = JSON.stringify({ agents: bots }).replaceAll("<", "\\u003c");
+---
+<div class="market" id="cpi-history">
+  <div class="filters">
+    <label class="field">
+      <span>What changed</span>
+      <select data-h="kind">
+        <option value="">All changes</option>
+        <option value="blocked">Blocked</option>
+        <option value="unblocked">Unblocked</option>
+        <option value="tightened">Tightened</option>
+        <option value="loosened">Loosened</option>
+        <option value="agent_named">Named this bot</option>
+        <option value="first_seen">First seen</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Bot</span>
+      <select data-h="bot">
+        <option value="">All bots</option>
+        {bots.map((a) => (
+          <option value={a.slug}>{a.token}</option>
+        ))}
+      </select>
+    </label>
+    <label class="field field-wide">
+      <span>Find a website</span>
+      <input data-h="q" type="search" placeholder="nytimes.com" autocomplete="off" />
+    </label>
+  </div>
+  <p class="answer" data-answer>Loading history…</p>
+  <p class="instrument-sub" data-answer-sub></p>
+  <div class="table-scroll">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Website</th>
+          <th>Bot</th>
+          <th>What changed</th>
+        </tr>
+      </thead>
+      <tbody data-rows>
+        <tr><td colspan="4" class="empty-cell">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="explorer-meta"><span data-count></span></p>
+</div>
+<script id="cpi-history-data" type="application/json" set:html={payload}></script>
+<script>
+  const host = document.getElementById("cpi-history");
+  const raw = document.getElementById("cpi-history-data");
+  if (host && raw) {
+    const data = JSON.parse(raw.textContent || "{}");
+    const agents: { slug: string; token: string }[] = data.agents || [];
+    const names = new Map(agents.map((a) => [a.slug, a.token]));
+    const KIND: Record<string, string> = {
+      first_seen: "First seen",
+      blocked: "Blocked",
+      unblocked: "Unblocked",
+      tightened: "Tightened",
+      loosened: "Loosened",
+      agent_named: "Named this bot",
+      agent_unnamed: "Stopped naming",
+      file_removed: "robots.txt gone",
+      file_appeared: "robots.txt appeared",
+    };
+    const MAX = 200;
+
+    function esc(value: string) {
+      return value.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] || ch);
+    }
+    function badge(kind: string) {
+      if (kind === "blocked" || kind === "tightened") return `<span class="badge badge-block">${esc(KIND[kind] || kind)}</span>`;
+      if (kind === "unblocked" || kind === "loosened") return `<span class="badge badge-allow">${esc(KIND[kind] || kind)}</span>`;
+      return `<span class="badge">${esc(KIND[kind] || kind)}</span>`;
+    }
+
+    const answer = host.querySelector("[data-answer]") as HTMLElement;
+    const sub = host.querySelector("[data-answer-sub]") as HTMLElement;
+    const body = host.querySelector("[data-rows]") as HTMLElement;
+    const count = host.querySelector("[data-count]") as HTMLElement;
+    const kindEl = host.querySelector('[data-h="kind"]') as HTMLSelectElement;
+    const botEl = host.querySelector('[data-h="bot"]') as HTMLSelectElement;
+    const qEl = host.querySelector('[data-h="q"]') as HTMLInputElement;
+
+    function paint(pack: { events?: [string, string, string, string, string, string][] }) {
+      const events = pack.events || [];
+      function render() {
+        const kind = kindEl.value;
+        const bot = botEl.value;
+        const q = (qEl.value || "").trim().toLowerCase();
+        const rows = events.filter((row) => {
+          if (kind && row[3] !== kind) return false;
+          if (bot && row[2] !== bot) return false;
+          if (q && !row[1].includes(q)) return false;
+          return true;
+        });
+        answer.textContent = events.length
+          ? `${rows.length.toLocaleString("en-US")} policy changes`
+          : "No history yet.";
+        sub.textContent = events.length
+          ? "Every flip we saw on the panel: a site named a bot, blocked it, or opened it again."
+          : "The change log appears after the next daily warehouse pass.";
+        count.textContent = rows.length > MAX
+          ? `Showing ${MAX} of ${rows.length.toLocaleString("en-US")}. Narrow the filters to see more.`
+          : rows.length ? `${rows.length.toLocaleString("en-US")} rows` : "";
+        const shown = rows.slice(0, MAX);
+        if (!shown.length) {
+          body.innerHTML = `<tr><td colspan="4" class="empty-cell">${events.length ? "No rows for these filters." : "Waiting on the first change log."}</td></tr>`;
+          return;
+        }
+        body.innerHTML = shown
+          .map(
+            ([when, domain, slug, k]) => `<tr>
+              <td>${esc(when)}</td>
+              <td><a href="/domain/${encodeURIComponent(domain)}">${esc(domain)}</a></td>
+              <td>${esc(slug ? names.get(slug) || slug : "All bots")}</td>
+              <td>${badge(k)}</td>
+            </tr>`,
+          )
+          .join("");
+      }
+      host.querySelectorAll("[data-h]").forEach((el) => {
+        el.addEventListener("change", render);
+        el.addEventListener("input", render);
+      });
+      render();
+    }
+
+    fetch("/api/history", { cache: "no-store" })
+      .then((res) => {
+        if (res.status === 401) {
+          window.location.href = "/sign-in?redirect_url=/history";
+          throw new Error("401");
+        }
+        if (res.status === 402) {
+          window.location.href = "/pricing#history";
+          throw new Error("402");
+        }
+        if (!res.ok) throw new Error(String(res.status));
+        return res.json();
+      })
+      .then(paint)
+      .catch((err) => {
+        if (err?.message === "401" || err?.message === "402") return;
+        answer.textContent = "History is still filling.";
+        sub.textContent = "The change log is written after the daily warehouse pass.";
+        body.innerHTML = `<tr><td colspan="4" class="empty-cell">No rows yet.</td></tr>`;
+      });
+  }
+</script>

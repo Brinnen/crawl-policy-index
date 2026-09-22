@@ -1,7 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import MarketTable from "../components/MarketTable.astro";
-import { PRICE_LABEL } from "../lib/access";
+import { HISTORY_PRICE_LABEL, PRICE_LABEL } from "../lib/access";
 import lab from "../data/lab.json";
 import preview from "../data/preview.json";
 
@@ -23,7 +23,7 @@ const gptbot = Number(lab.summary.gptbot_named_block || 0).toLocaleString("en-US
       </p>
       <div class="hero-actions">
         <a class="btn btn-primary" href="#sample">Try a sample of 100 sites</a>
-        <a class="btn btn-ghost" href="/pricing">Subscribe — {PRICE_LABEL}</a>
+        <a class="btn btn-ghost" href="/pricing">Subscribe — {PRICE_LABEL} or {HISTORY_PRICE_LABEL}</a>
       </div>
     </div>
   </section>
@@ -69,8 +69,8 @@ const gptbot = Number(lab.summary.gptbot_named_block || 0).toLocaleString("en-US
     </p>
     <MarketTable agents={agents} mode="preview" pack={preview} />
     <div class="paywall-band">
-      <p>If you want the full table — {panel} sites, every country, type, language, and bot — subscribe today.</p>
-      <a class="btn btn-primary" href="/pricing">Subscribe today · {PRICE_LABEL}</a>
+      <p>Full table {PRICE_LABEL}. History — who flipped, and when — {HISTORY_PRICE_LABEL}.</p>
+      <a class="btn btn-primary" href="/pricing">Subscribe today</a>
     </div>
   </section>
 </Layout>

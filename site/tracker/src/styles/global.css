@@ -237,6 +237,15 @@ main { flex: 1; padding: 2.5rem 0 4.5rem; }
   color: var(--fg);
   font-weight: 600;
 }
+.pricing-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 720px) {
+  .pricing-grid { grid-template-columns: 1fr 1fr; }
+}
 .pricing-card {
   max-width: 28rem;
   margin: 1.5rem 0;
@@ -245,6 +254,14 @@ main { flex: 1; padding: 2.5rem 0 4.5rem; }
   border: 1px solid var(--line);
   border-radius: calc(var(--radius) + 4px);
   box-shadow: var(--shadow);
+}
+.pricing-grid .pricing-card {
+  max-width: none;
+  margin: 0;
+}
+.pricing-card-featured {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  box-shadow: var(--shadow), 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 .pricing-card .price {
   margin: 0.35rem 0 1rem;

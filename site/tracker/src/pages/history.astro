@@ -1,0 +1,54 @@
+---
+import Layout from "../layouts/Layout.astro";
+import HistoryTable from "../components/HistoryTable.astro";
+import { HISTORY_PRICE_LABEL, isHistory, isSubscribed } from "../lib/access";
+import { userIdFromLocals } from "../lib/clerk";
+import lab from "../data/lab.json";
+
+const userId = userIdFromLocals(Astro.locals);
+if (!userId) return Astro.redirect("/sign-in?redirect_url=/history");
+
+let user: { publicMetadata?: Record<string, unknown> } | null = null;
+try {
+  user = (await Astro.locals.currentUser?.()) ?? null;
+} catch {
+  user = null;
+}
+if (!isSubscribed(user)) return Astro.redirect("/pricing#history");
+
+const agents = lab.by_agent ?? [];
+const unlocked = isHistory(user);
+---
+<Layout
+  title="History — Crawl Policy Index"
+  description="See which sites blocked or unblocked an AI crawler, and when."
+>
+  <div class="page-head">
+    <p class="kicker">History</p>
+    <h1>Who flipped, and when.</h1>
+  </div>
+  {unlocked ? (
+    <>
+      <p class="lede">
+        Every change we recorded on the panel: a site named a bot, blocked it, or opened the door again.
+      </p>
+      <section class="panel">
+        <HistoryTable agents={agents} />
+      </section>
+    </>
+  ) : (
+    <section class="pricing-card" id="upgrade">
+      <p class="kicker">History plan</p>
+      <p class="price">{HISTORY_PRICE_LABEL}</p>
+      <p class="lede">
+        You already have the live table. This plan adds the change log — who blocked, who unblocked, and on which day.
+      </p>
+      <ul>
+        <li>Everything in the full table</li>
+        <li>Daily flips: blocked, unblocked, named, tightened</li>
+        <li>Filter by bot and website</li>
+      </ul>
+      <a class="btn btn-primary" href="/api/checkout?plan=history">Add history</a>
+    </section>
+  )}
+</Layout>

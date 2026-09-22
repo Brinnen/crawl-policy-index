@@ -1,7 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import MarketTable from "../components/MarketTable.astro";
-import { isSubscribed } from "../lib/access";
+import { HISTORY_PRICE_LABEL, isHistory, isSubscribed } from "../lib/access";
 import { userIdFromLocals } from "../lib/clerk";
 import lab from "../data/lab.json";
 
@@ -29,6 +29,12 @@ const agents = lab.by_agent ?? [];
   <p class="lede">
     Country, type of site, language, and bot. The figure is how many of those sites block it.
   </p>
+  {!isHistory(user) && (
+    <div class="paywall-band">
+      <p>Want to see who flipped? History is the change log — who blocked, who unblocked, and when.</p>
+      <a class="btn btn-primary" href="/pricing#history">Add history · {HISTORY_PRICE_LABEL}</a>
+    </div>
+  )}
   <section class="panel">
     <MarketTable agents={agents} mode="full" />
   </section>
