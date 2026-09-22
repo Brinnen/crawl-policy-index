@@ -87,7 +87,6 @@ JOIN panel_domain pd
   ON pd.domain = wi.domain AND pd.panel_version = %s
 WHERE wi.valid_to IS NULL
   AND wi.has_wildcard_group
-  AND wi.state = 'BLOCKED'
 """
 
 SITES_SQL = """

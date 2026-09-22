@@ -145,7 +145,7 @@ const preview = mode === "preview";
     function paint(pack: { named?: [string, string, string][]; blanket?: [string, string][]; sites?: [string, string, string, string][] }) {
       const sites = pack.sites || [];
       const named = pack.named || [];
-      const blanketSet = new Set((pack.blanket || []).map((row) => row[0]));
+      const blanketBy = new Map((pack.blanket || []).map((row) => [row[0], row[1] || "BLOCKED"]));
       const namedBy = new Map<string, Map<string, string>>();
       for (const [domain, slug, state] of named) {
         if (!namedBy.has(domain)) namedBy.set(domain, new Map());
@@ -164,11 +164,13 @@ const preview = mode === "preview";
         "All languages",
       );
 
-      function verdict(domain: string, bot: string): "BLOCKED" | "ALLOWED" | "PARTIAL" | "BLANKET" | "" {
+      function verdict(domain: string, bot: string): "BLOCKED" | "ALLOWED" | "PARTIAL" | "BLANKET" {
         const namedState = namedBy.get(domain)?.get(bot);
-        if (namedState) return namedState as "BLOCKED" | "ALLOWED" | "PARTIAL";
-        if (blanketSet.has(domain)) return "BLANKET";
-        return "";
+        if (namedState === "BLOCKED" || namedState === "ALLOWED" || namedState === "PARTIAL") return namedState;
+        const star = blanketBy.get(domain);
+        if (star === "BLOCKED") return "BLANKET";
+        if (star === "PARTIAL") return "PARTIAL";
+        return "ALLOWED";
       }
       function label(v: string) {
         if (v === "BLANKET") return `<span class="badge badge-blanket">Block all bots</span>`;
@@ -185,7 +187,7 @@ const preview = mode === "preview";
         const botLabel = ([...$("bot").options].find((o) => o.value === bot)?.text || bot).trim();
         const q = ((host.querySelector('[data-m="q"]') as HTMLInputElement)?.value || "").trim().toLowerCase();
         const onlyBlocked = Boolean((host.querySelector('[data-m="blocked"]') as HTMLInputElement)?.checked);
-        const rank: Record<string, number> = { BLANKET: 0, BLOCKED: 1, PARTIAL: 2, ALLOWED: 3, "": 4 };
+        const rank: Record<string, number> = { BLANKET: 0, BLOCKED: 1, PARTIAL: 2, ALLOWED: 3 };
         const matched: [string, string, string, string, string][] = [];
         let blocked = 0;
         for (const [domain, lang, cc, cat] of sites) {
