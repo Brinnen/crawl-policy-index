@@ -48,7 +48,7 @@ python3 "$ROOT/warehouse/derive/derive_robots.py" \
   --store "$ROOT/data/store" \
   --panel-version "$PANEL"
 
-echo "Deriving homepage language (one-shot, existing rows kept)..."
+echo "Deriving homepage language and site type..."
 python3 "$ROOT/warehouse/derive/derive_language.py" \
   --store "$ROOT/data/store" \
   --panel-version "$PANEL"

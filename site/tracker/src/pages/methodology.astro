@@ -34,9 +34,8 @@ const panelSize = Number(lab.summary.panel_size || 1000).toLocaleString("en-US")
       that one may not.” Anyone can read it. We do.
     </p>
     <p>
-      We do <strong>not</strong> open articles, product pages, or comment threads. We also
-      do not yet measure paywalls or HTTP “pay to crawl” responses. Those are a different
-      kind of rule and are out of scope here.
+      If robots.txt allows the homepage, we fetch it once for language and a rough site type.
+      We do not follow links into articles, product pages, or comment threads.
     </p>
 
     <h2>Named vs a blanket “no”</h2>
@@ -84,21 +83,21 @@ const panelSize = Number(lab.summary.panel_size || 1000).toLocaleString("en-US")
       Tokens we could not confirm are stored, but they are not in published figures.
     </p>
 
-    <h2>Language is not country</h2>
+    <h2>How the table filters work</h2>
     <p>
-      When a site’s robots.txt allows us to fetch the homepage, we read it <strong>once</strong>
-      and record the declared language (<code>html lang</code>, or failing that a language
-      header / locale tag). <code>sv</code> means Swedish, not Sweden. We do not guess.
+      <strong>Country</strong> comes from a labeled list when we have one, otherwise from
+      the domain ending (<code>.se</code> → Sweden, <code>.co.uk</code> → United Kingdom).
+      Most <code>.com</code> sites have no country in this table.
     </p>
     <p>
-      If the site blocked us from the homepage, or published no language tag, the language
-      is unknown. Unknown will be more common among sites that block crawlers. Do not write
-      “Swedish sites block AI” from the language filter.
+      <strong>Type</strong> is labeled news where we maintain a list, otherwise
+      <code>.edu</code> / <code>.gov</code>, otherwise a rough read of the homepage
+      (news article markup, “add to cart”, and so on). Unknown is allowed — it is better
+      than guessing.
     </p>
     <p>
-      Country and “news” are a separate, labeled list we maintain. That list is incomplete
-      on purpose. “News in Sweden” means the labeled news sites with country SE — not every
-      publisher, and not every Swedish-language homepage.
+      <strong>Language</strong> is the homepage <code>lang</code> tag, fetched once when
+      robots.txt allows <code>/</code>. Swedish language is not the same as Sweden.
     </p>
 
     <h2>Training, search, and a person asking</h2>

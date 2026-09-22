@@ -1,7 +1,4 @@
-"""Fill domain_language from one-shot html_home observations.
-
-Does not fetch. Does not map language to country. Existing rows are kept.
-"""
+"""Fill language and site type from html_home observations. Does not fetch."""
 
 from __future__ import annotations
 
@@ -14,18 +11,38 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "parser"))
 
+from cpi_parser.category import category_from_html  # noqa: E402
 from cpi_parser.html_lang import detect_html_language  # noqa: E402
+from warehouse.cctld import category_from_domain  # noqa: E402
 from warehouse.dsn import database_dsn  # noqa: E402
 
 UPSERT = """
 INSERT INTO domain_language (
     domain, language, language_source, observed_at, content_sha256,
-    http_status, panel_version, robots_allowed
+    http_status, panel_version, robots_allowed, category
 ) VALUES (
     %(domain)s, %(language)s, %(language_source)s, %(observed_at)s,
-    %(content_sha256)s, %(http_status)s, %(panel_version)s, %(robots_allowed)s
+    %(content_sha256)s, %(http_status)s, %(panel_version)s, %(robots_allowed)s,
+    %(category)s
 )
-ON CONFLICT (domain) DO NOTHING;
+ON CONFLICT (domain) DO UPDATE SET
+    language = COALESCE(EXCLUDED.language, domain_language.language),
+    language_source = CASE
+      WHEN EXCLUDED.language IS NOT NULL THEN EXCLUDED.language_source
+      WHEN domain_language.language IS NOT NULL THEN domain_language.language_source
+      ELSE EXCLUDED.language_source
+    END,
+    observed_at = EXCLUDED.observed_at,
+    content_sha256 = COALESCE(EXCLUDED.content_sha256, domain_language.content_sha256),
+    http_status = COALESCE(EXCLUDED.http_status, domain_language.http_status),
+    panel_version = EXCLUDED.panel_version,
+    robots_allowed = EXCLUDED.robots_allowed,
+    category = COALESCE(
+      NULLIF(EXCLUDED.category, 'other'),
+      NULLIF(domain_language.category, 'other'),
+      EXCLUDED.category,
+      domain_language.category
+    );
 """
 
 OBS_SQL = """
@@ -66,6 +83,16 @@ def main(argv: list[str] | None = None) -> int:
             cur.execute(OBS_SQL, (args.panel_version,))
             rows = cur.fetchall()
             for domain, outcome, sha, status, fetched_at, panel_version, _err in rows:
+                html_cat = ""
+                body = b""
+                if outcome == "ok" and sha:
+                    try:
+                        body = _read_blob(store, sha)
+                    except FileNotFoundError:
+                        body = b""
+                if body:
+                    html_cat = category_from_html(body)
+                cat = category_from_domain(domain, html_cat)
                 if outcome == "skipped_robots":
                     cur.execute(
                         UPSERT,
@@ -78,6 +105,7 @@ def main(argv: list[str] | None = None) -> int:
                             "http_status": status,
                             "panel_version": panel_version,
                             "robots_allowed": False,
+                            "category": cat,
                         },
                     )
                     skipped_robots += 1
@@ -85,12 +113,10 @@ def main(argv: list[str] | None = None) -> int:
                     continue
                 lang = None
                 source = "http_error"
-                if outcome == "ok" and sha:
-                    try:
-                        body = _read_blob(store, sha)
-                        lang, source = detect_html_language(body)
-                    except FileNotFoundError:
-                        source = "missing"
+                if outcome == "ok" and body:
+                    lang, source = detect_html_language(body)
+                elif outcome == "ok" and sha:
+                    source = "missing"
                 elif outcome in {"not_found", "empty_body"}:
                     source = "missing"
                 cur.execute(
@@ -104,6 +130,7 @@ def main(argv: list[str] | None = None) -> int:
                         "http_status": status,
                         "panel_version": panel_version,
                         "robots_allowed": True,
+                        "category": cat,
                     },
                 )
                 if lang:

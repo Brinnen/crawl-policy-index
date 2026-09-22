@@ -10,11 +10,11 @@ export const PURPOSE_LABELS: Record<string, string> = {
 
 export const VERTICAL_LABELS: Record<string, string> = {
   news: "News",
-  ecommerce: "Ecommerce",
+  ecommerce: "Shop",
   gov: "Government",
   edu: "Education",
   tech: "Technology",
-  other: "Other / unassigned",
+  other: "Unknown",
 };
 
 export const LANGUAGE_LABELS: Record<string, string> = {

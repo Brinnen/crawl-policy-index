@@ -7,7 +7,7 @@ import Layout from "../layouts/Layout.astro";
 >
   <div class="page-head">
     <p class="kicker">For site owners</p>
-    <h1>We read your public rules. We do not read your pages.</h1>
+    <h1>We read your public rules. We fetch the homepage once.</h1>
   </div>
   <div class="prose">
     <p>
@@ -19,14 +19,16 @@ import Layout from "../layouts/Layout.astro";
     <p>
       Crawl Policy Index keeps a record of what websites say about AI crawlers.
       We are not a search engine. We do not train models. We do not follow links into
-      your articles or products.
+      your articles or products. If robots.txt allows <code>/</code>, we fetch the homepage
+      once so we can record language and a rough site type.
     </p>
 
     <h2>What we request</h2>
-    <p>At most three addresses per site, once per day:</p>
+    <p>At most four addresses per site, once per day:</p>
     <ul>
       <li>your crawl-rules file (<code>/robots.txt</code>) — the main one</li>
       <li>an optional AI-instructions file (<code>/llms.txt</code>) — often missing; a “not found” is still useful</li>
+      <li>your homepage (<code>/</code>) — only if robots.txt allows it; once, not every page</li>
       <li>your top-level sitemap (<code>/sitemap.xml</code>) — we do not then fetch every page listed there</li>
     </ul>
     <p>

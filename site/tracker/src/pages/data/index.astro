@@ -1,35 +1,47 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import Explorer from "../../components/Explorer.astro";
-import Glossary from "../../components/Glossary.astro";
+import { purposeLabel } from "../../lib/labels";
 import lab from "../../data/lab.json";
 
 const agents = lab.by_agent ?? [];
-const named = lab.named ?? [];
-const blanket = lab.blanket ?? [];
-const languages = lab.by_language ?? [];
-const countries = lab.by_country ?? [];
-const verticals = lab.by_vertical ?? [];
 ---
 <Layout
-  title="Explore — Crawl Policy Index"
-  description="Look up which websites named which AI bots, and whether they allowed, blocked, or mixed them — including a blanket block-all-bots rule."
+  title="Bots — Crawl Policy Index"
+  description="How often each AI crawler is named and blocked on this list of sites."
 >
   <div class="page-head">
-    <p class="kicker">Explore</p>
-    <h1>Look up a bot or a website.</h1>
+    <p class="kicker">Bots</p>
+    <h1>How often each bot is named and blocked.</h1>
   </div>
   <p class="lede">
-    Filter bots below. Type a website, or ask a slice: Swedish-language sites, or labeled news in Sweden.
-    Language is not country. News is a curated list, not every publisher.
+    These are sites that named the bot in robots.txt. For country, type of site, and language — including blanket “block all bots” — use Tables.
   </p>
-  <Explorer
-    agents={agents}
-    named={named}
-    blanket={blanket}
-    languages={languages}
-    countries={countries}
-    verticals={verticals}
-  />
-  <Glossary />
+  <section class="panel">
+    <div class="table-scroll">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Bot</th>
+            <th>Company</th>
+            <th>What it’s for</th>
+            <th class="num">Blocked</th>
+            <th class="num">Allowed</th>
+            <th class="num">Mixed</th>
+          </tr>
+        </thead>
+        <tbody data-home-agents>
+          {agents.map((row) => (
+            <tr>
+              <td>{row.token}</td>
+              <td>{row.operator}</td>
+              <td>{purposeLabel(row.purpose)}</td>
+              <td class="num">{row.named_block ?? "—"}</td>
+              <td class="num">{row.named_allow ?? "—"}</td>
+              <td class="num">{row.named_partial ?? "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
 </Layout>

@@ -15,14 +15,13 @@ const panelLabel = panelSize.toLocaleString("en-US");
 
 const {
   title,
-  description = `See which websites allow or block AI crawlers. Daily record of ${panelLabel} sites on a pinned list — not a percentage of the web.`,
+  description = `See which websites block AI crawlers, by country, type of site, and language.`,
 } = Astro.props;
 
 const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
 const nav = [
-  { href: "/", label: "Overview" },
-  { href: "/methodology", label: "How we count" },
-  { href: "/data", label: "Explore" },
+  { href: "/", label: "Tables" },
+  { href: "/data", label: "Bots" },
   { href: "/bot", label: "Site owners" },
 ];
 
@@ -85,8 +84,8 @@ const exportedDate = new Date(lab.generated_at).toLocaleDateString("en-GB", {
       </main>
       <footer class="site-footer">
         <div class="wrap">
-          <span>Snapshot <span data-exported-date>{exportedDate}</span> · <span data-panel-size>{panelLabel}</span>-site panel · not a share of the internet</span>
-          <span><a href="/bot">If we visited your website</a></span>
+          <span>Tables of who blocks which AI crawler · snapshot <span data-exported-date>{exportedDate}</span> · <span data-panel-size>{panelLabel}</span> sites</span>
+          <span><a href="/methodology">How we count</a> · <a href="/bot">If we visited your website</a></span>
         </div>
       </footer>
     </div>

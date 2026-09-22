@@ -19,6 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from warehouse.cctld import category_from_domain, country_from_domain  # noqa: E402
 from warehouse.dsn import database_dsn  # noqa: E402
 from warehouse.load.org_group import group_key  # noqa: E402
 
@@ -92,7 +93,7 @@ SELECT
     pd.domain,
     COALESCE(dl.language, ''),
     COALESCE(pd.country::text, ''),
-    COALESCE(pd.vertical, 'other')
+    COALESCE(NULLIF(pd.vertical, 'other'), dl.category, 'other')
 FROM panel_domain pd
 LEFT JOIN domain_language dl ON dl.domain = pd.domain
 WHERE pd.panel_version = %s
@@ -264,8 +265,29 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 cur.execute(SITES_SQL, (panel,))
                 lookup_sites = [
-                    [domain, lang, country, vertical]
+                    [
+                        domain,
+                        lang,
+                        country or country_from_domain(domain),
+                        category_from_domain(domain, vertical),
+                    ]
                     for domain, lang, country, vertical in cur.fetchall()
+                ]
+                by_country = []
+                counts: dict[str, int] = {}
+                for _domain, _lang, cc, _cat in lookup_sites:
+                    if cc:
+                        counts[cc] = counts.get(cc, 0) + 1
+                by_country = [
+                    {"country": code, "sites": n}
+                    for code, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:80]
+                ]
+                cat_counts: dict[str, int] = {}
+                for _domain, _lang, _cc, cat in lookup_sites:
+                    cat_counts[cat] = cat_counts.get(cat, 0) + 1
+                by_vertical = [
+                    {"vertical": slug, "sites": n}
+                    for slug, n in sorted(cat_counts.items(), key=lambda kv: (-kv[1], kv[0]))
                 ]
                 cur.execute(
                     """
@@ -293,29 +315,6 @@ def main(argv: list[str] | None = None) -> int:
                     (panel,),
                 )
                 by_language = [{"language": code, "sites": n} for code, n in cur.fetchall()]
-                cur.execute(
-                    """
-                    SELECT pd.country::text, count(*)
-                    FROM panel_domain pd
-                    WHERE pd.panel_version = %s AND pd.country IS NOT NULL
-                    GROUP BY 1
-                    ORDER BY 2 DESC
-                    LIMIT 80
-                    """,
-                    (panel,),
-                )
-                by_country = [{"country": code, "sites": n} for code, n in cur.fetchall()]
-                cur.execute(
-                    """
-                    SELECT COALESCE(pd.vertical, 'other'), count(*)
-                    FROM panel_domain pd
-                    WHERE pd.panel_version = %s
-                    GROUP BY 1
-                    ORDER BY 2 DESC
-                    """,
-                    (panel,),
-                )
-                by_vertical = [{"vertical": slug, "sites": n} for slug, n in cur.fetchall()]
                 cur.execute("RELEASE SAVEPOINT slices")
             except Exception:
                 cur.execute("ROLLBACK TO SAVEPOINT slices")
