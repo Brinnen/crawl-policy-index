@@ -1,6 +1,6 @@
 """One-shot homepage fetch for the public 100-site sample.
 
-Respects robots.txt for this user-agent. Does not spoof Googlebot.
+Fetches "/" even when robots.txt would say no. Does not spoof Googlebot.
 Language comes from the page. Country stays labeled or ccTLD — never html lang.
 """
 
@@ -22,12 +22,10 @@ sys.path.insert(0, str(ROOT / "panel"))
 
 from cpi_parser.category import category_from_html  # noqa: E402
 from cpi_parser.html_lang import detect_html_language  # noqa: E402
-from cpi_parser.robots import parse, path_allowed  # noqa: E402
 from labels import labeled_country, labeled_vertical  # noqa: E402
 from warehouse.cctld import category_from_domain, country_from_domain  # noqa: E402
 
 UA = "CrawlPolicyIndex/1.0 (+https://crawlpolicyindex.org/bot)"
-UA_TOKEN = "CrawlPolicyIndex"
 CAP = 524288
 TIMEOUT = 15
 WORKERS = 8
@@ -74,25 +72,11 @@ def fetch_bytes(domain: str, path: str, accept: str) -> tuple[int, bytes, str]:
     return _get(f"http://{domain}{path}", accept)
 
 
-def allows_home(robots_body: bytes) -> bool:
-    if not robots_body:
-        return True
-    parsed = parse(robots_body)
-    group, _kind = parsed.group_for_token(UA_TOKEN)
-    if group is None:
-        return True
-    return path_allowed(group.rules, "/")
-
-
 def enrich_one(domain: str) -> tuple[str, str, str, str, str]:
     labeled = labeled_vertical(domain)
     country = labeled_country(domain) or country_from_domain(domain)
     category = category_from_domain(domain, labeled)
     language = ""
-    note = "ok"
-    st, robots, _ = fetch_bytes(domain, "/robots.txt", "text/plain, */*")
-    if st and st < 400 and robots and not allows_home(robots):
-        return domain, language, country, category, "skipped_robots"
     st, html, content_language = fetch_bytes(
         domain, "/", "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8"
     )
@@ -103,7 +87,7 @@ def enrich_one(domain: str) -> tuple[str, str, str, str, str]:
         language = lang
     if not labeled:
         category = category_from_domain(domain, category_from_html(html))
-    return domain, language, country, category, note
+    return domain, language, country, category, "ok"
 
 
 def main() -> int:
@@ -111,7 +95,6 @@ def main() -> int:
     pack = json.loads(PREVIEW.read_text(encoding="utf-8"))
     by_host = {row[0]: list(row) for row in pack.get("sites") or []}
     ok = 0
-    skipped = 0
     failed = 0
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         futs = {pool.submit(enrich_one, host): host for host in hosts}
@@ -119,7 +102,8 @@ def main() -> int:
             domain, language, country, category, note = fut.result()
             prev = by_host.get(domain, [domain, "", "", ""])
             if note == "ok":
-                by_host[domain] = [domain, language, country, category or "other"]
+                by_host[domain] = [domain, language or prev[1], country, category or "other"]
+                ok += 1
             else:
                 by_host[domain] = [
                     domain,
@@ -127,20 +111,15 @@ def main() -> int:
                     country or prev[2],
                     category if category and category != "other" else (prev[3] or category or "other"),
                 ]
-            if note == "ok":
-                ok += 1
-            elif note == "skipped_robots":
-                skipped += 1
-            else:
                 failed += 1
-            print(f"{domain:24} {language or '—':5} {country or '—':4} {by_host[domain][3]:12} {note}")
+            print(f"{domain:24} {by_host[domain][1] or '—':5} {country or '—':4} {by_host[domain][3]:12} {note}")
     pack["sites"] = [by_host.get(h, [h, "", "", ""]) for h in hosts]
     PREVIEW.write_text(json.dumps(pack, separators=(",", ":")) + "\n", encoding="utf-8")
     langs = sum(1 for row in pack["sites"] if row[1])
     countries = sum(1 for row in pack["sites"] if row[2])
     typed = sum(1 for row in pack["sites"] if row[3] and row[3] != "other")
     print(
-        f"wrote {PREVIEW} ok={ok} skipped_robots={skipped} failed={failed} "
+        f"wrote {PREVIEW} ok={ok} failed={failed} "
         f"language={langs} country={countries} typed={typed}"
     )
     return 0

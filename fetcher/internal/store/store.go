@@ -201,6 +201,9 @@ func (s *FS) LoadResourceDomains(resource string) (map[string]struct{}, error) {
 				continue
 			}
 			if obs.Domain != "" {
+				if resource == "html_home" && obs.Outcome == "skipped_robots" {
+					continue
+				}
 				done[obs.Domain] = struct{}{}
 			}
 		}
