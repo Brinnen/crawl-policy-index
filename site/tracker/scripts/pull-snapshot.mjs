@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const url = process.env.CPI_SNAPSHOT_URL || "http://178.128.255.20/snapshot/lab.json";
@@ -24,13 +24,23 @@ try {
 }
 
 try {
+  const committed = JSON.parse(readFileSync(previewOut, "utf8"));
   const res = await fetch(previewUrl, { signal: AbortSignal.timeout(20000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const text = await res.text();
-  const parsed = JSON.parse(text);
-  if (!Array.isArray(parsed?.sites)) throw new Error("preview missing sites");
-  writeFileSync(previewOut, text.endsWith("\n") ? text : `${text}\n`);
-  console.log(`pulled preview sites=${parsed.sites.length}`);
+  const live = JSON.parse(await res.text());
+  if (!Array.isArray(live?.named) && !Array.isArray(committed?.sites)) {
+    throw new Error("preview missing sites");
+  }
+  const merged = {
+    named: Array.isArray(live.named) && live.named.length ? live.named : committed.named || [],
+    blanket: Array.isArray(live.blanket) && live.blanket.length ? live.blanket : committed.blanket || [],
+    sites: committed.sites,
+  };
+  if (!Array.isArray(merged.sites) || !merged.sites.length) {
+    throw new Error("committed preview missing sites");
+  }
+  writeFileSync(previewOut, `${JSON.stringify(merged)}\n`);
+  console.log(`pulled preview named=${merged.named.length} kept sites=${merged.sites.length}`);
 } catch (err) {
   const message = err instanceof Error ? err.message : String(err);
   console.warn(`preview pull skipped (${message}); using committed preview.json`);
