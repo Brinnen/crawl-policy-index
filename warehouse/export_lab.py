@@ -4,9 +4,9 @@ Called by scripts/daily-run.sh after warehouse-once.sh. Writes:
 
     site/tracker/src/data/lab.json
 
-scripts/publish-lab.sh copies lab.json and lookup.json to
+scripts/publish-lab.sh copies lab.json, lookup.json, and preview.json to
 /var/www/cpi/snapshot/. lookup.json is the website search index
-(compact triples). It is not embedded in the tracker HTML.
+(compact triples). preview.json is the public 100-site sample.
 """
 
 from __future__ import annotations
@@ -117,6 +117,33 @@ WHERE panel_version = %s
 ORDER BY tranco_rank NULLS LAST, domain
 LIMIT 100
 """
+
+SHOWCASE_HOSTS_PATH = ROOT / "warehouse" / "showcase_hosts.txt"
+NEWS_LABELS_PATH = ROOT / "registry" / "verticals.yml"
+
+
+def showcase_hosts() -> list[str]:
+    if not SHOWCASE_HOSTS_PATH.exists():
+        return []
+    return [
+        line.strip()
+        for line in SHOWCASE_HOSTS_PATH.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+
+
+def news_labels() -> dict[str, str]:
+    out: dict[str, str] = {}
+    if not NEWS_LABELS_PATH.exists():
+        return out
+    for line in NEWS_LABELS_PATH.read_text(encoding="utf-8").splitlines():
+        if "domain:" not in line or "country:" not in line:
+            continue
+        domain = line.split("domain:", 1)[1].split(",", 1)[0].strip()
+        country = line.split("country:", 1)[1].split("}", 1)[0].strip()
+        if domain and len(country) == 2 and country.isalpha():
+            out[domain] = country.upper()
+    return out
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -265,6 +292,7 @@ def main(argv: list[str] | None = None) -> int:
             lookup_blanket = [[domain, state] for domain, state in cur.fetchall()]
             lookup_sites: list[list[str]] = []
             preview_hosts: list[str] = []
+            labeled_news = news_labels()
             language_known = 0
             language_unknown = panel_size
             language_robots_disallow = 0
@@ -274,15 +302,17 @@ def main(argv: list[str] | None = None) -> int:
             cur.execute("SAVEPOINT slices")
             try:
                 cur.execute(SITES_SQL, (panel,))
-                lookup_sites = [
-                    [
-                        domain,
-                        lang,
-                        country or country_from_domain(domain),
-                        category_from_domain(domain, vertical),
-                    ]
-                    for domain, lang, country, vertical in cur.fetchall()
-                ]
+                lookup_sites = []
+                for domain, lang, country, vertical in cur.fetchall():
+                    news_cc = labeled_news.get(domain, "")
+                    lookup_sites.append(
+                        [
+                            domain,
+                            lang,
+                            country or news_cc or country_from_domain(domain),
+                            category_from_domain(domain, "news" if news_cc else vertical),
+                        ]
+                    )
                 by_country = []
                 counts: dict[str, int] = {}
                 for _domain, _lang, cc, _cat in lookup_sites:
@@ -325,8 +355,13 @@ def main(argv: list[str] | None = None) -> int:
                     (panel,),
                 )
                 by_language = [{"language": code, "sites": n} for code, n in cur.fetchall()]
-                cur.execute(PREVIEW_HOSTS_SQL, (panel,))
-                preview_hosts = [row[0] for row in cur.fetchall()]
+                wanted = showcase_hosts()
+                have = {row[0] for row in lookup_sites}
+                if wanted:
+                    preview_hosts = [host for host in wanted if host in have]
+                else:
+                    cur.execute(PREVIEW_HOSTS_SQL, (panel,))
+                    preview_hosts = [row[0] for row in cur.fetchall()]
                 cur.execute("RELEASE SAVEPOINT slices")
             except Exception:
                 cur.execute("ROLLBACK TO SAVEPOINT slices")
