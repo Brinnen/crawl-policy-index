@@ -10,6 +10,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "panel"))
+from labels import apply_labels, load_labels  # noqa: E402
 from warehouse.dsn import database_dsn  # noqa: E402
 
 UPSERT_VERSION = """
@@ -55,23 +57,38 @@ def main(argv: list[str] | None = None) -> int:
     dsn = args.dsn or database_dsn()
 
     man = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
-    rows = []
+    raw: list[dict[str, str]] = []
     with Path(args.csv).open(encoding="utf-8", newline="") as f:
         for rec in csv.DictReader(f):
-            country = (rec.get("country") or "").strip()
-            rank = (rec.get("tranco_rank") or "").strip()
-            strata = [s for s in (rec.get("strata") or "head").split("|") if s]
-            rows.append(
+            raw.append(
                 {
-                    "panel_version": man["version"],
                     "domain": rec["domain"].strip().lower(),
-                    "strata": strata,
-                    "tranco_rank": int(rank) if rank else None,
-                    "country": country if len(country) == 2 else None,
+                    "strata": rec.get("strata") or "head",
+                    "tranco_rank": (rec.get("tranco_rank") or "").strip(),
+                    "country": (rec.get("country") or "").strip(),
                     "vertical": rec.get("vertical") or "other",
-                    "added_on": rec.get("added_on") or man.get("frozen_on"),
+                    "added_on": rec.get("added_on") or man.get("frozen_on") or "",
+                    "psl_version": rec.get("psl_version") or man.get("psl_version") or "",
                 }
             )
+    keep = {row["domain"] for row in raw}
+    labeled = [row for row in apply_labels(raw, load_labels()) if row["domain"] in keep]
+    rows = []
+    for rec in labeled:
+        country = (rec.get("country") or "").strip()
+        rank = (rec.get("tranco_rank") or "").strip()
+        strata = [s for s in (rec.get("strata") or "head").split("|") if s]
+        rows.append(
+            {
+                "panel_version": man["version"],
+                "domain": rec["domain"],
+                "strata": strata,
+                "tranco_rank": int(rank) if rank else None,
+                "country": country if len(country) == 2 else None,
+                "vertical": rec.get("vertical") or "other",
+                "added_on": rec.get("added_on") or man.get("frozen_on"),
+            }
+        )
 
     import psycopg
 

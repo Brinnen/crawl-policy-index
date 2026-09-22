@@ -10,9 +10,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "parser"))
+sys.path.insert(0, str(ROOT / "panel"))
 
 from cpi_parser.category import category_from_html  # noqa: E402
 from cpi_parser.html_lang import detect_html_language  # noqa: E402
+from labels import labeled_vertical  # noqa: E402
 from warehouse.cctld import category_from_domain  # noqa: E402
 from warehouse.dsn import database_dsn  # noqa: E402
 
@@ -92,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
                         body = b""
                 if body:
                     html_cat = category_from_html(body)
-                cat = category_from_domain(domain, html_cat)
+                cat = category_from_domain(domain, labeled_vertical(domain) or html_cat)
                 if outcome == "skipped_robots":
                     cur.execute(
                         UPSERT,
