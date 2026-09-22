@@ -242,9 +242,9 @@ const payload = JSON.stringify({
         render();
       })
       .catch(() => {
-        answer.textContent = "Tables are still being built on the server.";
-        sub.textContent = "When today’s job prints ok, refresh this page.";
-        body.innerHTML = `<tr><td colspan="5" class="empty-cell">lookup.json is not up yet.</td></tr>`;
+        answer.textContent = "This table is still filling from today’s crawl.";
+        sub.textContent = "Refresh later — the filters stay, the rows will appear.";
+        body.innerHTML = `<tr><td colspan="5" class="empty-cell">No rows yet.</td></tr>`;
       });
   }
 </script>
