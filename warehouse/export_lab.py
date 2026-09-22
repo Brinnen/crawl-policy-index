@@ -19,6 +19,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "panel"))
+from labels import labeled_country, labeled_vertical, load_labels  # noqa: E402
 from warehouse.cctld import category_from_domain, country_from_domain  # noqa: E402
 from warehouse.dsn import database_dsn  # noqa: E402
 from warehouse.load.org_group import group_key  # noqa: E402
@@ -119,7 +121,6 @@ LIMIT 100
 """
 
 SHOWCASE_HOSTS_PATH = ROOT / "warehouse" / "showcase_hosts.txt"
-NEWS_LABELS_PATH = ROOT / "registry" / "verticals.yml"
 
 
 def showcase_hosts() -> list[str]:
@@ -133,17 +134,15 @@ def showcase_hosts() -> list[str]:
 
 
 def news_labels() -> dict[str, str]:
-    out: dict[str, str] = {}
-    if not NEWS_LABELS_PATH.exists():
-        return out
-    for line in NEWS_LABELS_PATH.read_text(encoding="utf-8").splitlines():
-        if "domain:" not in line or "country:" not in line:
-            continue
-        domain = line.split("domain:", 1)[1].split(",", 1)[0].strip()
-        country = line.split("country:", 1)[1].split("}", 1)[0].strip()
-        if domain and len(country) == 2 and country.isalpha():
-            out[domain] = country.upper()
-    return out
+    return dict(load_labels().get("news") or {})
+
+
+def site_category(domain: str, observed: str = "") -> str:
+    return category_from_domain(domain, labeled_vertical(domain) or observed)
+
+
+def site_country(domain: str, observed: str = "") -> str:
+    return labeled_country(domain) or observed or country_from_domain(domain)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -292,7 +291,6 @@ def main(argv: list[str] | None = None) -> int:
             lookup_blanket = [[domain, state] for domain, state in cur.fetchall()]
             lookup_sites: list[list[str]] = []
             preview_hosts: list[str] = []
-            labeled_news = news_labels()
             language_known = 0
             language_unknown = panel_size
             language_robots_disallow = 0
@@ -304,13 +302,12 @@ def main(argv: list[str] | None = None) -> int:
                 cur.execute(SITES_SQL, (panel,))
                 lookup_sites = []
                 for domain, lang, country, vertical in cur.fetchall():
-                    news_cc = labeled_news.get(domain, "")
                     lookup_sites.append(
                         [
                             domain,
                             lang,
-                            country or news_cc or country_from_domain(domain),
-                            category_from_domain(domain, "news" if news_cc else vertical),
+                            site_country(domain, country),
+                            site_category(domain, vertical),
                         ]
                     )
                 by_country = []

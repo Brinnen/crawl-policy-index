@@ -2,21 +2,102 @@
 # Country here is a labeled market (ISO 3166-1 alpha-2), not a language tag.
 # This news list is curated and incomplete. It is a stratum, not “all news.”
 
-version: "1.0.0"
+version: "1.1.0"
 
 verticals:
   - slug: news
-    label: News and publishers
+    label: News
+  - slug: social
+    label: Social
   - slug: ecommerce
-    label: Ecommerce
-  - slug: gov
-    label: Government
-  - slug: edu
-    label: Education
+    label: Shop
+  - slug: search
+    label: Search
+  - slug: streaming
+    label: Video
   - slug: tech
     label: Technology
+  - slug: travel
+    label: Travel
+  - slug: jobs
+    label: Jobs
+  - slug: edu
+    label: Education
+  - slug: gov
+    label: Government
   - slug: other
     label: Other / unassigned
+
+# Hand-labeled well-known sites. This is the product category, not an HTML guess.
+known_domains:
+  - { domain: google.com, vertical: search, country: US }
+  - { domain: youtube.com, vertical: streaming, country: US }
+  - { domain: facebook.com, vertical: social, country: US }
+  - { domain: instagram.com, vertical: social, country: US }
+  - { domain: twitter.com, vertical: social, country: US }
+  - { domain: x.com, vertical: social, country: US }
+  - { domain: wikipedia.org, vertical: other }
+  - { domain: amazon.com, vertical: ecommerce, country: US }
+  - { domain: reddit.com, vertical: social, country: US }
+  - { domain: yahoo.com, vertical: search, country: US }
+  - { domain: tiktok.com, vertical: social }
+  - { domain: linkedin.com, vertical: social, country: US }
+  - { domain: netflix.com, vertical: streaming, country: US }
+  - { domain: microsoft.com, vertical: tech, country: US }
+  - { domain: apple.com, vertical: tech, country: US }
+  - { domain: bing.com, vertical: search, country: US }
+  - { domain: office.com, vertical: tech, country: US }
+  - { domain: twitch.tv, vertical: streaming, country: US }
+  - { domain: github.com, vertical: tech, country: US }
+  - { domain: whatsapp.com, vertical: social, country: US }
+  - { domain: pinterest.com, vertical: social, country: US }
+  - { domain: adobe.com, vertical: tech, country: US }
+  - { domain: zoom.us, vertical: tech, country: US }
+  - { domain: espn.com, vertical: news, country: US }
+  - { domain: imdb.com, vertical: streaming, country: US }
+  - { domain: ebay.com, vertical: ecommerce, country: US }
+  - { domain: walmart.com, vertical: ecommerce, country: US }
+  - { domain: etsy.com, vertical: ecommerce, country: US }
+  - { domain: paypal.com, vertical: ecommerce, country: US }
+  - { domain: dropbox.com, vertical: tech, country: US }
+  - { domain: slack.com, vertical: tech, country: US }
+  - { domain: spotify.com, vertical: streaming, country: SE }
+  - { domain: medium.com, vertical: social, country: US }
+  - { domain: quora.com, vertical: social, country: US }
+  - { domain: stackoverflow.com, vertical: tech, country: US }
+  - { domain: cloudflare.com, vertical: tech, country: US }
+  - { domain: wordpress.com, vertical: tech, country: US }
+  - { domain: discord.com, vertical: social, country: US }
+  - { domain: telegram.org, vertical: social }
+  - { domain: vk.com, vertical: social, country: RU }
+  - { domain: baidu.com, vertical: search, country: CN }
+  - { domain: yandex.ru, vertical: search, country: RU }
+  - { domain: naver.com, vertical: search, country: KR }
+  - { domain: qq.com, vertical: social, country: CN }
+  - { domain: taobao.com, vertical: ecommerce, country: CN }
+  - { domain: alibaba.com, vertical: ecommerce, country: CN }
+  - { domain: samsung.com, vertical: tech, country: KR }
+  - { domain: intel.com, vertical: tech, country: US }
+  - { domain: nvidia.com, vertical: tech, country: US }
+  - { domain: oracle.com, vertical: tech, country: US }
+  - { domain: salesforce.com, vertical: tech, country: US }
+  - { domain: shopify.com, vertical: ecommerce, country: CA }
+  - { domain: booking.com, vertical: travel, country: NL }
+  - { domain: airbnb.com, vertical: travel, country: US }
+  - { domain: uber.com, vertical: travel, country: US }
+  - { domain: tripadvisor.com, vertical: travel, country: US }
+  - { domain: weather.com, vertical: other, country: US }
+  - { domain: craigslist.org, vertical: ecommerce, country: US }
+  - { domain: indeed.com, vertical: jobs, country: US }
+  - { domain: nih.gov, vertical: gov, country: US }
+  - { domain: harvard.edu, vertical: edu, country: US }
+  - { domain: mit.edu, vertical: edu, country: US }
+  - { domain: stanford.edu, vertical: edu, country: US }
+  - { domain: ox.ac.uk, vertical: edu, country: GB }
+  - { domain: cam.ac.uk, vertical: edu, country: GB }
+  - { domain: wp.pl, vertical: news, country: PL }
+  - { domain: who.int, vertical: gov }
+  - { domain: nasa.gov, vertical: gov, country: US }
 
 news_domains:
   # Sweden

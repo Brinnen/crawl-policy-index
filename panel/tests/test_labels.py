@@ -1,4 +1,4 @@
-from labels import apply_labels
+from labels import apply_labels, labeled_vertical, load_labels
 
 
 def test_news_label_merges_and_adds():
@@ -31,6 +31,37 @@ def test_news_label_merges_and_adds():
     assert by_domain["dn.se"]["country"] == "SE"
     assert by_domain["example.com"]["vertical"] == "other"
     assert by_domain["example.com"]["country"] == ""
+
+
+def test_known_shop_and_social():
+    labels = load_labels()
+    rows = [
+        {
+            "domain": "ebay.com",
+            "strata": "head",
+            "tranco_rank": "1",
+            "country": "",
+            "vertical": "other",
+            "psl_version": "dev-unpinned",
+            "added_on": "2026-09-21",
+        },
+        {
+            "domain": "instagram.com",
+            "strata": "head",
+            "tranco_rank": "2",
+            "country": "",
+            "vertical": "other",
+            "psl_version": "dev-unpinned",
+            "added_on": "2026-09-21",
+        },
+    ]
+    out = apply_labels(rows, labels)
+    by_domain = {r["domain"]: r for r in out}
+    assert labeled_vertical("ebay.com") == "ecommerce"
+    assert labeled_vertical("instagram.com") == "social"
+    assert by_domain["ebay.com"]["vertical"] == "ecommerce"
+    assert by_domain["instagram.com"]["vertical"] == "social"
+    assert by_domain["ebay.com"]["country"] == "US"
 
 
 def test_sample_still_deterministic(tmp_path):

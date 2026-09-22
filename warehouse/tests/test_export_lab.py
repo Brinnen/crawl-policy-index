@@ -17,6 +17,8 @@ def test_published_export_uses_verified_agents_only():
     assert "preview.json" in src
     assert "showcase_hosts" in src
     assert "news_labels" in src
+    assert "site_category" in src
+    assert "labeled_vertical" in src
 
 
 def test_write_lookup_is_compact(tmp_path: Path):

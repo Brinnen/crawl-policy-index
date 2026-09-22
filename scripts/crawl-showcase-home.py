@@ -18,12 +18,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "parser"))
+sys.path.insert(0, str(ROOT / "panel"))
 
 from cpi_parser.category import category_from_html  # noqa: E402
 from cpi_parser.html_lang import detect_html_language  # noqa: E402
 from cpi_parser.robots import parse, path_allowed  # noqa: E402
+from labels import labeled_country, labeled_vertical  # noqa: E402
 from warehouse.cctld import category_from_domain, country_from_domain  # noqa: E402
-from warehouse.export_lab import news_labels  # noqa: E402
 
 UA = "CrawlPolicyIndex/1.0 (+https://crawlpolicyindex.org/bot)"
 UA_TOKEN = "CrawlPolicyIndex"
@@ -83,10 +84,10 @@ def allows_home(robots_body: bytes) -> bool:
     return path_allowed(group.rules, "/")
 
 
-def enrich_one(domain: str, news: dict[str, str]) -> tuple[str, str, str, str, str]:
-    labeled_cc = news.get(domain, "")
-    country = labeled_cc or country_from_domain(domain)
-    category = category_from_domain(domain, "news" if labeled_cc else "")
+def enrich_one(domain: str) -> tuple[str, str, str, str, str]:
+    labeled = labeled_vertical(domain)
+    country = labeled_country(domain) or country_from_domain(domain)
+    category = category_from_domain(domain, labeled)
     language = ""
     note = "ok"
     st, robots, _ = fetch_bytes(domain, "/robots.txt", "text/plain, */*")
@@ -100,7 +101,7 @@ def enrich_one(domain: str, news: dict[str, str]) -> tuple[str, str, str, str, s
     lang, _source = detect_html_language(html, content_language or None)
     if lang:
         language = lang
-    if not labeled_cc:
+    if not labeled:
         category = category_from_domain(domain, category_from_html(html))
     return domain, language, country, category, note
 
@@ -109,12 +110,11 @@ def main() -> int:
     hosts = [line.strip() for line in HOSTS.read_text(encoding="utf-8").splitlines() if line.strip()]
     pack = json.loads(PREVIEW.read_text(encoding="utf-8"))
     by_host = {row[0]: list(row) for row in pack.get("sites") or []}
-    news = news_labels()
     ok = 0
     skipped = 0
     failed = 0
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        futs = {pool.submit(enrich_one, host, news): host for host in hosts}
+        futs = {pool.submit(enrich_one, host): host for host in hosts}
         for fut in as_completed(futs):
             domain, language, country, category, note = fut.result()
             prev = by_host.get(domain, [domain, "", "", ""])

@@ -10,10 +10,15 @@ export const PURPOSE_LABELS: Record<string, string> = {
 
 export const VERTICAL_LABELS: Record<string, string> = {
   news: "News",
+  social: "Social",
   ecommerce: "Shop",
+  search: "Search",
+  streaming: "Video",
+  tech: "Technology",
+  travel: "Travel",
+  jobs: "Jobs",
   gov: "Government",
   edu: "Education",
-  tech: "Technology",
   other: "Unknown",
 };
 
@@ -71,6 +76,11 @@ export const COUNTRY_LABELS: Record<string, string> = {
   SG: "Singapore",
   IL: "Israel",
   QA: "Qatar",
+  CN: "China",
+  KR: "South Korea",
+  RU: "Russia",
+  BR: "Brazil",
+  PL: "Poland",
 };
 
 export const STATE_LABELS: Record<string, string> = {
