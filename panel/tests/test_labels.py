@@ -62,6 +62,8 @@ def test_known_shop_and_social():
     assert by_domain["ebay.com"]["vertical"] == "ecommerce"
     assert by_domain["instagram.com"]["vertical"] == "social"
     assert by_domain["ebay.com"]["country"] == "US"
+    assert labeled_vertical("wikipedia.org") == "directory"
+    assert labeled_vertical("weather.com") == "weather"
 
 
 def test_sample_still_deterministic(tmp_path):

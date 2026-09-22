@@ -17,6 +17,8 @@ export const VERTICAL_LABELS: Record<string, string> = {
   tech: "Technology",
   travel: "Travel",
   jobs: "Jobs",
+  directory: "Directory",
+  weather: "Weather",
   gov: "Government",
   edu: "Education",
   other: "Unknown",

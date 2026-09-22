@@ -21,6 +21,10 @@ verticals:
     label: Travel
   - slug: jobs
     label: Jobs
+  - slug: directory
+    label: Directory
+  - slug: weather
+    label: Weather
   - slug: edu
     label: Education
   - slug: gov
@@ -36,7 +40,7 @@ known_domains:
   - { domain: instagram.com, vertical: social, country: US }
   - { domain: twitter.com, vertical: social, country: US }
   - { domain: x.com, vertical: social, country: US }
-  - { domain: wikipedia.org, vertical: other }
+  - { domain: wikipedia.org, vertical: directory }
   - { domain: amazon.com, vertical: ecommerce, country: US }
   - { domain: reddit.com, vertical: social, country: US }
   - { domain: yahoo.com, vertical: search, country: US }
@@ -86,7 +90,7 @@ known_domains:
   - { domain: airbnb.com, vertical: travel, country: US }
   - { domain: uber.com, vertical: travel, country: US }
   - { domain: tripadvisor.com, vertical: travel, country: US }
-  - { domain: weather.com, vertical: other, country: US }
+  - { domain: weather.com, vertical: weather, country: US }
   - { domain: craigslist.org, vertical: ecommerce, country: US }
   - { domain: indeed.com, vertical: jobs, country: US }
   - { domain: nih.gov, vertical: gov, country: US }

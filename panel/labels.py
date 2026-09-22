@@ -27,6 +27,8 @@ KNOWN_VERTICALS = {
     "tech",
     "travel",
     "jobs",
+    "directory",
+    "weather",
     "edu",
     "gov",
     "other",
