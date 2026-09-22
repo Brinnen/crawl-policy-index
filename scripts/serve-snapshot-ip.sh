@@ -34,6 +34,13 @@ server {
         add_header Cache-Control "public, max-age=60" always;
     }
 
+    location = /snapshot/preview.json {
+        alias /var/www/cpi/snapshot/preview.json;
+        default_type application/json;
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Cache-Control "public, max-age=60" always;
+    }
+
     location /snapshot/ {
         alias /var/www/cpi/snapshot/;
         default_type application/json;

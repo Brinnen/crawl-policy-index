@@ -13,6 +13,8 @@ def test_published_export_uses_verified_agents_only():
     assert "LOOKUP_NAMED_SQL" in src
     assert "LOOKUP_BLANKET_SQL" in src
     assert "SITES_SQL" in src
+    assert "PREVIEW_HOSTS_SQL" in src
+    assert "preview.json" in src
 
 
 def test_write_lookup_is_compact(tmp_path: Path):

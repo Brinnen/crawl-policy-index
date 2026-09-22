@@ -1,21 +1,24 @@
 {
-  "generated_at": "2026-09-11T10:43:00Z",
-  "panel_version": "sites1000",
+  "generated_at": "2026-09-22T07:41:55Z",
+  "panel_version": "sites100k",
   "parse_version": "1.0.0",
-  "view": "v_lab_gptbot_named_grouped",
-  "lab": true,
-  "verified_agents": false,
+  "view": "policy_interval",
+  "lab": false,
+  "verified_agents": true,
   "summary": {
-    "trusted_robots": 572,
-    "gptbot_named_block": 99,
-    "gptbot_named_allow": 19,
-    "gptbot_named_partial": 34,
-    "gptbot_named_block_grouped": 87,
-    "gptbot_blanket_block": null,
-    "openai_split": 56,
-    "googlebot_named_block": 2,
-    "calendar_observations": 2008,
-    "panel_size": 1000
+    "trusted_robots": 55686,
+    "gptbot_named_block": 9371,
+    "gptbot_named_allow": 1236,
+    "gptbot_named_partial": 1226,
+    "gptbot_named_block_grouped": 9348,
+    "gptbot_blanket_block": 2172,
+    "openai_split": 7999,
+    "googlebot_named_block": 60,
+    "calendar_observations": 202845,
+    "panel_size": 100000,
+    "language_known": 0,
+    "language_unknown": 100000,
+    "language_robots_disallow": 0
   },
   "by_agent": [
     {
@@ -24,9 +27,9 @@
       "agent": "All bots",
       "operator": "Site-wide rule",
       "purpose": "blanket",
-      "named_block": null,
-      "named_allow": null,
-      "named_partial": null
+      "named_block": 2409,
+      "named_allow": 13437,
+      "named_partial": 38333
     },
     {
       "slug": "openai-gptbot",
@@ -34,9 +37,199 @@
       "agent": "GPTBot",
       "operator": "OpenAI",
       "purpose": "training",
-      "named_block": 99,
-      "named_allow": 19,
-      "named_partial": 34
+      "named_block": 9371,
+      "named_allow": 1236,
+      "named_partial": 1226
+    },
+    {
+      "slug": "commoncrawl-ccbot",
+      "token": "CCBot",
+      "agent": "CCBot",
+      "operator": "Common Crawl",
+      "purpose": "training",
+      "named_block": 9144,
+      "named_allow": 567,
+      "named_partial": 588
+    },
+    {
+      "slug": "anthropic-claudebot",
+      "token": "ClaudeBot",
+      "agent": "ClaudeBot",
+      "operator": "Anthropic",
+      "purpose": "training",
+      "named_block": 8477,
+      "named_allow": 1201,
+      "named_partial": 1021
+    },
+    {
+      "slug": "google-extended",
+      "token": "Google-Extended",
+      "agent": "Google-Extended",
+      "operator": "Google",
+      "purpose": "opt_out_token",
+      "named_block": 7887,
+      "named_allow": 1063,
+      "named_partial": 894
+    },
+    {
+      "slug": "meta-externalagent",
+      "token": "meta-externalagent",
+      "agent": "meta-externalagent",
+      "operator": "Meta",
+      "purpose": "training",
+      "named_block": 7703,
+      "named_allow": 460,
+      "named_partial": 605
+    },
+    {
+      "slug": "apple-applebot-extended",
+      "token": "Applebot-Extended",
+      "agent": "Applebot-Extended",
+      "operator": "Apple",
+      "purpose": "opt_out_token",
+      "named_block": 7545,
+      "named_allow": 443,
+      "named_partial": 538
+    },
+    {
+      "slug": "huawei-petalbot",
+      "token": "PetalBot",
+      "agent": "PetalBot",
+      "operator": "Huawei",
+      "purpose": "search_index",
+      "named_block": 2453,
+      "named_allow": 111,
+      "named_partial": 159
+    },
+    {
+      "slug": "openai-chatgpt-user",
+      "token": "ChatGPT-User",
+      "agent": "ChatGPT-User",
+      "operator": "OpenAI",
+      "purpose": "user_fetch",
+      "named_block": 2379,
+      "named_allow": 1151,
+      "named_partial": 1047
+    },
+    {
+      "slug": "perplexity-bot",
+      "token": "PerplexityBot",
+      "agent": "PerplexityBot",
+      "operator": "Perplexity",
+      "purpose": "search_index",
+      "named_block": 2323,
+      "named_allow": 1261,
+      "named_partial": 1054
+    },
+    {
+      "slug": "openai-searchbot",
+      "token": "OAI-SearchBot",
+      "agent": "OAI-SearchBot",
+      "operator": "OpenAI",
+      "purpose": "search_index",
+      "named_block": 1396,
+      "named_allow": 1048,
+      "named_partial": 1029
+    },
+    {
+      "slug": "ai2-bot",
+      "token": "AI2Bot",
+      "agent": "AI2Bot",
+      "operator": "Allen Institute for AI",
+      "purpose": "training",
+      "named_block": 1225,
+      "named_allow": 44,
+      "named_partial": 134
+    },
+    {
+      "slug": "webzio-extended",
+      "token": "Webzio-Extended",
+      "agent": "Webzio-Extended",
+      "operator": "Webz.io",
+      "purpose": "opt_out_token",
+      "named_block": 1088,
+      "named_allow": 14,
+      "named_partial": 42
+    },
+    {
+      "slug": "meta-externalfetcher",
+      "token": "meta-externalfetcher",
+      "agent": "meta-externalfetcher",
+      "operator": "Meta",
+      "purpose": "user_fetch",
+      "named_block": 1020,
+      "named_allow": 145,
+      "named_partial": 185
+    },
+    {
+      "slug": "anthropic-claude-searchbot",
+      "token": "Claude-SearchBot",
+      "agent": "Claude-SearchBot",
+      "operator": "Anthropic",
+      "purpose": "search_index",
+      "named_block": 872,
+      "named_allow": 411,
+      "named_partial": 534
+    },
+    {
+      "slug": "perplexity-user",
+      "token": "Perplexity-User",
+      "agent": "Perplexity-User",
+      "operator": "Perplexity",
+      "purpose": "user_fetch",
+      "named_block": 846,
+      "named_allow": 448,
+      "named_partial": 472
+    },
+    {
+      "slug": "anthropic-claude-user",
+      "token": "Claude-User",
+      "agent": "Claude-User",
+      "operator": "Anthropic",
+      "purpose": "user_fetch",
+      "named_block": 822,
+      "named_allow": 411,
+      "named_partial": 462
+    },
+    {
+      "slug": "google-cloudvertexbot",
+      "token": "Google-CloudVertexBot",
+      "agent": "Google-CloudVertexBot",
+      "operator": "Google",
+      "purpose": "training",
+      "named_block": 786,
+      "named_allow": 80,
+      "named_partial": 107
+    },
+    {
+      "slug": "mistral-user",
+      "token": "MistralAI-User",
+      "agent": "MistralAI-User",
+      "operator": "Mistral",
+      "purpose": "user_fetch",
+      "named_block": 709,
+      "named_allow": 103,
+      "named_partial": 154
+    },
+    {
+      "slug": "apple-applebot",
+      "token": "Applebot",
+      "agent": "Applebot",
+      "operator": "Apple",
+      "purpose": "search_index",
+      "named_block": 689,
+      "named_allow": 481,
+      "named_partial": 553
+    },
+    {
+      "slug": "microsoft-bingbot",
+      "token": "bingbot",
+      "agent": "bingbot",
+      "operator": "Microsoft",
+      "purpose": "search_index",
+      "named_block": 162,
+      "named_allow": 1496,
+      "named_partial": 1545
     },
     {
       "slug": "google-googlebot",
@@ -44,9 +237,346 @@
       "agent": "Googlebot",
       "operator": "Google",
       "purpose": "search_index",
-      "named_block": 2,
-      "named_allow": null,
-      "named_partial": null
+      "named_block": 60,
+      "named_allow": 1570,
+      "named_partial": 2732
+    }
+  ],
+  "by_language": [],
+  "by_country": [
+    {
+      "country": "RU",
+      "sites": 3524
+    },
+    {
+      "country": "DE",
+      "sites": 2045
+    },
+    {
+      "country": "JP",
+      "sites": 2010
+    },
+    {
+      "country": "IN",
+      "sites": 1466
+    },
+    {
+      "country": "BR",
+      "sites": 1457
+    },
+    {
+      "country": "GB",
+      "sites": 1325
+    },
+    {
+      "country": "CN",
+      "sites": 1309
+    },
+    {
+      "country": "FR",
+      "sites": 1005
+    },
+    {
+      "country": "IT",
+      "sites": 887
+    },
+    {
+      "country": "PL",
+      "sites": 758
+    },
+    {
+      "country": "NL",
+      "sites": 637
+    },
+    {
+      "country": "AU",
+      "sites": 531
+    },
+    {
+      "country": "ES",
+      "sites": 510
+    },
+    {
+      "country": "CA",
+      "sites": 464
+    },
+    {
+      "country": "ID",
+      "sites": 418
+    },
+    {
+      "country": "CZ",
+      "sites": 405
+    },
+    {
+      "country": "IR",
+      "sites": 353
+    },
+    {
+      "country": "UA",
+      "sites": 327
+    },
+    {
+      "country": "TW",
+      "sites": 324
+    },
+    {
+      "country": "GR",
+      "sites": 306
+    },
+    {
+      "country": "KR",
+      "sites": 304
+    },
+    {
+      "country": "MX",
+      "sites": 300
+    },
+    {
+      "country": "TR",
+      "sites": 299
+    },
+    {
+      "country": "CH",
+      "sites": 293
+    },
+    {
+      "country": "SE",
+      "sites": 291
+    },
+    {
+      "country": "AR",
+      "sites": 290
+    },
+    {
+      "country": "RO",
+      "sites": 283
+    },
+    {
+      "country": "VN",
+      "sites": 272
+    },
+    {
+      "country": "HU",
+      "sites": 265
+    },
+    {
+      "country": "BE",
+      "sites": 256
+    },
+    {
+      "country": "ZA",
+      "sites": 252
+    },
+    {
+      "country": "AT",
+      "sites": 241
+    },
+    {
+      "country": "US",
+      "sites": 226
+    },
+    {
+      "country": "FI",
+      "sites": 220
+    },
+    {
+      "country": "CL",
+      "sites": 217
+    },
+    {
+      "country": "MY",
+      "sites": 189
+    },
+    {
+      "country": "PT",
+      "sites": 182
+    },
+    {
+      "country": "PK",
+      "sites": 172
+    },
+    {
+      "country": "PH",
+      "sites": 163
+    },
+    {
+      "country": "SK",
+      "sites": 161
+    },
+    {
+      "country": "NO",
+      "sites": 153
+    },
+    {
+      "country": "DK",
+      "sites": 150
+    },
+    {
+      "country": "PE",
+      "sites": 149
+    },
+    {
+      "country": "IL",
+      "sites": 148
+    },
+    {
+      "country": "IE",
+      "sites": 132
+    },
+    {
+      "country": "KZ",
+      "sites": 128
+    },
+    {
+      "country": "BG",
+      "sites": 124
+    },
+    {
+      "country": "BY",
+      "sites": 121
+    },
+    {
+      "country": "NZ",
+      "sites": 120
+    },
+    {
+      "country": "RS",
+      "sites": 113
+    },
+    {
+      "country": "HR",
+      "sites": 110
+    },
+    {
+      "country": "TH",
+      "sites": 105
+    },
+    {
+      "country": "SG",
+      "sites": 92
+    },
+    {
+      "country": "HK",
+      "sites": 85
+    },
+    {
+      "country": "LT",
+      "sites": 85
+    },
+    {
+      "country": "AZ",
+      "sites": 76
+    },
+    {
+      "country": "UZ",
+      "sites": 76
+    },
+    {
+      "country": "EE",
+      "sites": 74
+    },
+    {
+      "country": "LV",
+      "sites": 74
+    },
+    {
+      "country": "EC",
+      "sites": 73
+    },
+    {
+      "country": "SA",
+      "sites": 70
+    },
+    {
+      "country": "BD",
+      "sites": 66
+    },
+    {
+      "country": "KE",
+      "sites": 65
+    },
+    {
+      "country": "EG",
+      "sites": 60
+    },
+    {
+      "country": "AE",
+      "sites": 59
+    },
+    {
+      "country": "ST",
+      "sites": 59
+    },
+    {
+      "country": "MA",
+      "sites": 58
+    },
+    {
+      "country": "NG",
+      "sites": 57
+    },
+    {
+      "country": "IS",
+      "sites": 56
+    },
+    {
+      "country": "SI",
+      "sites": 52
+    },
+    {
+      "country": "UY",
+      "sites": 51
+    },
+    {
+      "country": "VE",
+      "sites": 46
+    },
+    {
+      "country": "LK",
+      "sites": 43
+    },
+    {
+      "country": "GE",
+      "sites": 36
+    },
+    {
+      "country": "LY",
+      "sites": 35
+    },
+    {
+      "country": "LA",
+      "sites": 31
+    },
+    {
+      "country": "AC",
+      "sites": 30
+    },
+    {
+      "country": "CR",
+      "sites": 30
+    },
+    {
+      "country": "DZ",
+      "sites": 30
+    },
+    {
+      "country": "TN",
+      "sites": 30
+    }
+  ],
+  "by_vertical": [
+    {
+      "vertical": "other",
+      "sites": 96703
+    },
+    {
+      "vertical": "gov",
+      "sites": 1887
+    },
+    {
+      "vertical": "edu",
+      "sites": 1410
     }
   ],
   "named": [],

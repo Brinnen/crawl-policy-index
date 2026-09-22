@@ -1,0 +1,29 @@
+---
+import Layout from "../layouts/Layout.astro";
+import MarketTable from "../components/MarketTable.astro";
+import { isSubscribed } from "../lib/access";
+import lab from "../data/lab.json";
+
+const { userId } = Astro.locals.auth();
+if (!userId) return Astro.redirect("/sign-in");
+
+const user = await Astro.locals.currentUser();
+if (!isSubscribed(user)) return Astro.redirect("/pricing");
+
+const agents = lab.by_agent ?? [];
+---
+<Layout
+  title="Full table — Crawl Policy Index"
+  description="Filter the full list of sites by country, type, language, and bot."
+>
+  <div class="page-head">
+    <p class="kicker">Full table</p>
+    <h1>Filter the list. Get the number.</h1>
+  </div>
+  <p class="lede">
+    Country, type of site, language, and bot. The figure is how many of those sites block it.
+  </p>
+  <section class="panel">
+    <MarketTable agents={agents} mode="full" />
+  </section>
+</Layout>

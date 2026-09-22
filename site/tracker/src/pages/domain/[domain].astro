@@ -1,42 +1,9 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import DomainView from "../../components/DomainView.astro";
-import lab from "../../data/lab.json";
 
-type NamedRow = {
-  domain: string;
-  state: string;
-  valid_from?: string;
-  agent_slug?: string;
-  token?: string;
-  agent?: string;
-  operator?: string;
-  purpose?: string;
-  kind?: string;
-  group_key: string;
-};
-
-export function getStaticPaths() {
-  const named = [...(lab.named as NamedRow[]), ...((lab as { blanket?: NamedRow[] }).blanket ?? [])];
-  const byDomain = new Map<string, NamedRow[]>();
-  for (const row of named) {
-    const list = byDomain.get(row.domain) ?? [];
-    list.push(row);
-    byDomain.set(row.domain, list);
-  }
-  return [...byDomain.entries()].map(([domain, rows]) => ({
-    params: { domain },
-    props: { domain, rows },
-  }));
-}
-
-interface Props {
-  domain: string;
-  rows: NamedRow[];
-}
-
-const { domain, rows } = Astro.props;
+const domain = decodeURIComponent(Astro.params.domain || "");
 ---
-<Layout title={`${domain} — Crawl Policy Index`}>
-  <DomainView domain={domain} rows={rows} />
+<Layout title={`${domain || "Website"} — Crawl Policy Index`}>
+  <DomainView domain={domain} rows={[]} />
 </Layout>

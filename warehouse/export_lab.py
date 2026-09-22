@@ -110,6 +110,15 @@ def write_lookup(path: Path, named: list, blanket: list, sites: list | None = No
     )
 
 
+PREVIEW_HOSTS_SQL = """
+SELECT domain
+FROM panel_domain
+WHERE panel_version = %s
+ORDER BY tranco_rank NULLS LAST, domain
+LIMIT 100
+"""
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--out", default=str(OUT))
@@ -255,6 +264,7 @@ def main(argv: list[str] | None = None) -> int:
             cur.execute(LOOKUP_BLANKET_SQL, (panel,))
             lookup_blanket = [[domain, state] for domain, state in cur.fetchall()]
             lookup_sites: list[list[str]] = []
+            preview_hosts: list[str] = []
             language_known = 0
             language_unknown = panel_size
             language_robots_disallow = 0
@@ -315,6 +325,8 @@ def main(argv: list[str] | None = None) -> int:
                     (panel,),
                 )
                 by_language = [{"language": code, "sites": n} for code, n in cur.fetchall()]
+                cur.execute(PREVIEW_HOSTS_SQL, (panel,))
+                preview_hosts = [row[0] for row in cur.fetchall()]
                 cur.execute("RELEASE SAVEPOINT slices")
             except Exception:
                 cur.execute("ROLLBACK TO SAVEPOINT slices")
@@ -447,6 +459,19 @@ def main(argv: list[str] | None = None) -> int:
     out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     lookup_path = out.with_name("lookup.json")
     write_lookup(lookup_path, lookup_named, lookup_blanket, lookup_sites)
+    preview_path = out.with_name("preview.json")
+    if preview_hosts:
+        hostset = set(preview_hosts)
+        write_lookup(
+            preview_path,
+            [row for row in lookup_named if row[0] in hostset],
+            [row for row in lookup_blanket if row[0] in hostset],
+            [row for row in lookup_sites if row[0] in hostset],
+        )
+        print(
+            f"wrote {preview_path} preview hosts={len(preview_hosts)} "
+            f"sites={sum(1 for row in lookup_sites if row[0] in hostset)}"
+        )
     print(
         f"wrote {out} panel={panel} size={panel_size} "
         f"({len(named)} named rows, {len(blanket)} block-all-bots, {len(by_agent)} agents)"

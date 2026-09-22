@@ -31,6 +31,7 @@ site/tracker/src/data/lookup.json
 site/tracker/node_modules/
 site/tracker/dist/
 site/tracker/.astro/
+site/tracker/.vercel/
 .vscode/
 *.swp
 .DS_Store

@@ -1,13 +1,76 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import MarketTable from "../components/MarketTable.astro";
+import { PRICE_LABEL } from "../lib/access";
 import lab from "../data/lab.json";
+import preview from "../data/preview.json";
 
 const agents = lab.by_agent ?? [];
+const panel = Number(lab.summary.panel_size || 100000).toLocaleString("en-US");
+const gptbot = Number(lab.summary.gptbot_named_block || 0).toLocaleString("en-US");
 ---
 <Layout
   title="Who blocks AI crawlers?"
-  description="Filter websites by country, type, language and bot. See how many block GPTBot, ClaudeBot, and others."
+  description="Filter 100,000 websites by country, type, and language. See who blocks GPTBot, ClaudeBot, and the rest."
 >
-  <MarketTable agents={agents} />
+  <section class="hero hero-sell">
+    <div class="hero-copy">
+      <p class="pill"><i></i> A table you can sell, cite, and filter</p>
+      <h1>See who blocks which AI crawler.</h1>
+      <p class="lede">
+        We read the public crawl rules of {panel} websites every day. You pick a country,
+        a type of site, a language, and a bot — and you get the number.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#sample">Try a sample of 100 sites</a>
+        <a class="btn btn-ghost" href="/pricing">Subscribe — {PRICE_LABEL}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="stat">
+      <div class="label">Sites we watch</div>
+      <span class="value" data-panel-size>{panel}</span>
+      <p class="hint">A pinned list. Not “the web”.</p>
+    </div>
+    <div class="stat">
+      <div class="label">Named GPTBot, blocked</div>
+      <span class="value" data-stat="gptbot_named_block">{gptbot}</span>
+      <p class="hint">Sites that named GPTBot and said no.</p>
+    </div>
+    <div class="stat">
+      <div class="label">Bots in the table</div>
+      <span class="value">{Math.max(0, (lab.by_agent ?? []).length - 1)}</span>
+      <p class="hint">GPTBot, ClaudeBot, Googlebot, and the rest.</p>
+    </div>
+  </section>
+
+  <section class="grid-3" id="how">
+    <div class="tile">
+      <h3>1. We read the rules</h3>
+      <p>Once a day we fetch robots.txt — the public file that says which bots may look around.</p>
+    </div>
+    <div class="tile">
+      <h3>2. We turn it into a table</h3>
+      <p>Each site, each bot: blocked, allowed, mixed, or a blanket “block all bots”.</p>
+    </div>
+    <div class="tile">
+      <h3>3. You ask a real question</h3>
+      <p>“Swedish news vs GPTBot.” “UK shops vs ClaudeBot.” The figure is that slice, not a vibe.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="sample">
+    <p class="kicker">The product</p>
+    <h2>A sample of 100 well-known sites.</h2>
+    <p class="sub">
+      Same filters as the full table. Same bots. One hundred names you already know — so you can see what you are buying.
+    </p>
+    <MarketTable agents={agents} mode="preview" pack={preview} />
+    <div class="paywall-band">
+      <p>If you want the full table — {panel} sites, every country, type, language, and bot — subscribe today.</p>
+      <a class="btn btn-primary" href="/pricing">Subscribe today · {PRICE_LABEL}</a>
+    </div>
+  </section>
 </Layout>

@@ -1,19 +1,29 @@
 {
-  "framework": "astro",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
   "redirects": [
     { "source": "/data/lab.json", "destination": "/data", "permanent": true },
     { "source": "/data/gptbot-named.csv", "destination": "/data", "permanent": true },
     { "source": "/data/gptbot-named-grouped.csv", "destination": "/data", "permanent": true }
   ],
   "rewrites": [
-    { "source": "/snapshot/:path*", "destination": "http://178.128.255.20/snapshot/:path*" },
-    { "source": "/domain/:domain", "destination": "/domain/index.html" }
+    {
+      "source": "/snapshot/lab.json",
+      "destination": "http://178.128.255.20/snapshot/lab.json"
+    },
+    {
+      "source": "/snapshot/preview.json",
+      "destination": "http://178.128.255.20/snapshot/preview.json"
+    }
   ],
   "headers": [
     {
-      "source": "/snapshot/:path*",
+      "source": "/snapshot/lab.json",
+      "headers": [
+        { "key": "x-vercel-enable-rewrite-caching", "value": "0" },
+        { "key": "Cache-Control", "value": "public, max-age=60" }
+      ]
+    },
+    {
+      "source": "/snapshot/preview.json",
       "headers": [
         { "key": "x-vercel-enable-rewrite-caching", "value": "0" },
         { "key": "Cache-Control", "value": "public, max-age=60" }

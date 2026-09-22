@@ -1,7 +1,18 @@
+import clerk from "@clerk/astro";
+import vercel from "@astrojs/vercel";
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
-  output: "static",
+  integrations: [
+    clerk({
+      signInUrl: "/sign-in",
+      signUpUrl: "/sign-up",
+      signInFallbackRedirectUrl: "/app",
+      signUpFallbackRedirectUrl: "/pricing",
+    }),
+  ],
+  adapter: vercel(),
+  output: "server",
   site: "https://crawlpolicyindex.org",
   redirects: {
     "/data/lab.json": "/data",
@@ -9,4 +20,3 @@ export default defineConfig({
     "/data/gptbot-named-grouped.csv": "/data",
   },
 });
-

@@ -1,0 +1,32 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { PRICE_LABEL } from "../lib/access";
+import lab from "../data/lab.json";
+
+const panel = Number(lab.summary.panel_size || 100000).toLocaleString("en-US");
+---
+<Layout
+  title="Subscribe — Crawl Policy Index"
+  description="Subscribe for the full filterable table of who blocks which AI crawler."
+>
+  <div class="page-head">
+    <p class="kicker">Pricing</p>
+    <h1>The full table. Every site we watch.</h1>
+  </div>
+  <p class="lede">
+    The homepage sample is 100 well-known sites. Subscribers get the whole {panel}-site table,
+    with country, type, language, and every bot we track.
+  </p>
+  <section class="pricing-card">
+    <p class="kicker">Full table</p>
+    <p class="price">{PRICE_LABEL}</p>
+    <ul>
+      <li>{panel} websites on a pinned list</li>
+      <li>Filter by country, type of site, language, and bot</li>
+      <li>Named rules plus blanket “block all bots”</li>
+      <li>Updated from the daily crawl</li>
+    </ul>
+    <a class="btn btn-primary" href="/api/checkout">Subscribe today</a>
+    <p class="instrument-sub">Create an account, then pay with Stripe. Cancel from your account.</p>
+  </section>
+</Layout>

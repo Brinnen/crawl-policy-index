@@ -1,9 +1,10 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { purposeLabel } from "../../lib/labels";
+import { PRICE_LABEL } from "../../lib/access";
 import lab from "../../data/lab.json";
 
-const agents = lab.by_agent ?? [];
+const agents = (lab.by_agent ?? []).slice(0, 8);
 ---
 <Layout
   title="Bots — Crawl Policy Index"
@@ -11,10 +12,10 @@ const agents = lab.by_agent ?? [];
 >
   <div class="page-head">
     <p class="kicker">Bots</p>
-    <h1>How often each bot is named and blocked.</h1>
+    <h1>A preview of who is named and blocked.</h1>
   </div>
   <p class="lede">
-    These are sites that named the bot in robots.txt. For country, type of site, and language — including blanket “block all bots” — use Tables.
+    Top bots on this list. Country, type, language, and the rest of the sites are in the full table.
   </p>
   <section class="panel">
     <div class="table-scroll">
@@ -25,23 +26,23 @@ const agents = lab.by_agent ?? [];
             <th>Company</th>
             <th>What it’s for</th>
             <th class="num">Blocked</th>
-            <th class="num">Allowed</th>
-            <th class="num">Mixed</th>
           </tr>
         </thead>
-        <tbody data-home-agents>
+        <tbody>
           {agents.map((row) => (
             <tr>
               <td>{row.token}</td>
               <td>{row.operator}</td>
               <td>{purposeLabel(row.purpose)}</td>
               <td class="num">{row.named_block ?? "—"}</td>
-              <td class="num">{row.named_allow ?? "—"}</td>
-              <td class="num">{row.named_partial ?? "—"}</td>
             </tr>
           ))}
         </tbody>
       </table>
+    </div>
+    <div class="paywall-band">
+      <p>Want every bot, every site, and the filters? Subscribe today.</p>
+      <a class="btn btn-primary" href="/pricing">Subscribe · {PRICE_LABEL}</a>
     </div>
   </section>
 </Layout>

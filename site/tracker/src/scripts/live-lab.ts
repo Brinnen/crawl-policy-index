@@ -1,7 +1,7 @@
 import { PURPOSE_LABELS, STATE_LABELS } from "../lib/labels";
 
 export const SNAPSHOT_URL = "/snapshot/lab.json";
-export const LOOKUP_URL = "/snapshot/lookup.json";
+export const LOOKUP_URL = "/api/lookup";
 
 export type LabRow = {
   domain?: string;

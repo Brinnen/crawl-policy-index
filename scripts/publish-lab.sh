@@ -22,9 +22,15 @@ if mkdir -p /var/www/cpi/snapshot 2>/dev/null; then
   if [[ -f "$LOOKUP" ]]; then
     cp "$LOOKUP" /var/www/cpi/snapshot/lookup.json
     chmod 644 /var/www/cpi/snapshot/lookup.json
-    echo "snapshot https://crawlpolicyindex.org/snapshot/lookup.json"
+    echo "snapshot lookup.json on this host (not public on the website)"
   else
-    echo "WARNING: missing $LOOKUP — Explore website search will be empty" >&2
+    echo "WARNING: missing $LOOKUP — full table will be empty until export" >&2
+  fi
+  PREVIEW="$ROOT/site/tracker/src/data/preview.json"
+  if [[ -f "$PREVIEW" ]]; then
+    cp "$PREVIEW" /var/www/cpi/snapshot/preview.json
+    chmod 644 /var/www/cpi/snapshot/preview.json
+    echo "snapshot https://crawlpolicyindex.org/snapshot/preview.json"
   fi
   published=1
 else

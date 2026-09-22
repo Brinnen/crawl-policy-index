@@ -1,0 +1,9 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { SignUp } from "@clerk/astro/components";
+---
+<Layout title="Create an account — Crawl Policy Index" description="Create an account to subscribe.">
+  <div class="auth-box">
+    <SignUp path="/sign-up" fallbackRedirectUrl="/api/checkout" />
+  </div>
+</Layout>

@@ -9,68 +9,68 @@ interface AgentRow {
 
 interface Props {
   agents: AgentRow[];
+  mode?: "preview" | "full";
+  pack?: unknown;
 }
 
-const { agents } = Astro.props;
+const { agents, mode = "full", pack } = Astro.props;
 const bots = [...agents].filter((a) => a.slug !== "wildcard-star").sort((a, b) => a.token.localeCompare(b.token));
 const payload = JSON.stringify({
   agents: bots,
   languageLabels: LANGUAGE_LABELS,
   countryLabels: COUNTRY_LABELS,
   verticalLabels: VERTICAL_LABELS,
+  mode,
+  pack: pack ?? null,
 }).replaceAll("<", "\\u003c");
+const preview = mode === "preview";
 ---
-<section class="hero" id="cpi-market">
-  <div class="hero-copy" style="max-width:none">
-    <p class="pill"><i></i> Who blocks which AI crawler</p>
-    <h1>Filter the list. Get the number.</h1>
-    <p class="lede">
-      Pick a country, a type of site, a language, and a bot. The figure is how many of those sites block it.
-    </p>
-    <div class="filters">
-      <label class="field">
-        <span>Country</span>
-        <select data-m="country"><option value="">All countries</option></select>
-      </label>
-      <label class="field">
-        <span>Type of site</span>
-        <select data-m="category">
-          <option value="">All types</option>
-          <option value="news">News</option>
-          <option value="ecommerce">Shop</option>
-          <option value="gov">Government</option>
-          <option value="edu">Education</option>
-          <option value="other">Unknown type</option>
-        </select>
-      </label>
-      <label class="field">
-        <span>Language</span>
-        <select data-m="language"><option value="">All languages</option></select>
-      </label>
-      <label class="field">
-        <span>Bot</span>
-        <select data-m="bot">
-          {bots.map((a) => (
-            <option value={a.slug} selected={a.slug === "openai-gptbot"}>
-              {a.token}
-            </option>
-          ))}
-        </select>
-      </label>
+<div class="market" id="cpi-market" data-mode={mode}>
+  <div class="filters">
+    <label class="field">
+      <span>Country</span>
+      <select data-m="country"><option value="">All countries</option></select>
+    </label>
+    <label class="field">
+      <span>Type of site</span>
+      <select data-m="category">
+        <option value="">All types</option>
+        <option value="news">News</option>
+        <option value="ecommerce">Shop</option>
+        <option value="gov">Government</option>
+        <option value="edu">Education</option>
+        <option value="other">Unknown type</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Language</span>
+      <select data-m="language"><option value="">All languages</option></select>
+    </label>
+    <label class="field">
+      <span>Bot</span>
+      <select data-m="bot">
+        {bots.map((a) => (
+          <option value={a.slug} selected={a.slug === "openai-gptbot"}>
+            {a.token}
+          </option>
+        ))}
+      </select>
+    </label>
+    {!preview && (
       <label class="field field-wide">
         <span>Find a website</span>
         <input data-m="q" type="search" placeholder="svt.se" autocomplete="off" />
       </label>
-    </div>
+    )}
+  </div>
+  {!preview && (
     <label class="check">
       <input type="checkbox" data-m="blocked" />
       Only sites that block this bot
     </label>
-    <p class="answer" data-answer>Loading the tables…</p>
-    <p class="instrument-sub" data-answer-sub></p>
-  </div>
-</section>
-<section class="panel">
+  )}
+  <p class="answer" data-answer>Loading the tables…</p>
+  <p class="instrument-sub" data-answer-sub></p>
   <div class="table-scroll">
     <table class="data">
       <thead>
@@ -88,10 +88,9 @@ const payload = JSON.stringify({
     </table>
   </div>
   <p class="explorer-meta"><span data-count></span></p>
-</section>
+</div>
 <script id="cpi-market-data" type="application/json" set:html={payload}></script>
 <script>
-  const root = document.getElementById("cpi-market")?.closest("main") || document.getElementById("cpi-market");
   const host = document.getElementById("cpi-market");
   const raw = document.getElementById("cpi-market-data");
   if (host && raw) {
@@ -99,8 +98,8 @@ const payload = JSON.stringify({
     const LANG = data.languageLabels || {};
     const COUNTRY = data.countryLabels || {};
     const VERT = data.verticalLabels || {};
-    const MAX = 200;
-    const LOOKUP = "/snapshot/lookup.json";
+    const preview = data.mode === "preview";
+    const MAX = preview ? 100 : 200;
 
     function regionName(code: string) {
       if (!code) return "—";
@@ -132,118 +131,145 @@ const payload = JSON.stringify({
     const $ = (name: string) => host.querySelector(`[data-m="${name}"]`) as HTMLSelectElement;
     const answer = host.querySelector("[data-answer]") as HTMLElement;
     const sub = host.querySelector("[data-answer-sub]") as HTMLElement;
-    const body = document.querySelector("[data-rows]") as HTMLElement;
-    const count = document.querySelector("[data-count]") as HTMLElement;
+    const body = host.querySelector("[data-rows]") as HTMLElement;
+    const count = host.querySelector("[data-count]") as HTMLElement;
 
-    fetch(LOOKUP, { cache: "no-store" })
-      .then((res) => {
-        if (!res.ok) throw new Error(String(res.status));
-        return res.json();
-      })
-      .then((pack: { named?: [string, string, string][]; blanket?: [string, string][]; sites?: [string, string, string, string][] }) => {
-        const sites = pack.sites || [];
-        const named = pack.named || [];
-        const blanketSet = new Set((pack.blanket || []).map((row) => row[0]));
-        const namedBy = new Map<string, Map<string, string>>();
-        for (const [domain, slug, state] of named) {
-          if (!namedBy.has(domain)) namedBy.set(domain, new Map());
-          namedBy.get(domain)!.set(slug, state);
-        }
-        const countries = [...new Set(sites.map((s) => s[2]).filter(Boolean))].sort();
-        const langs = [...new Set(sites.map((s) => s[1]).filter(Boolean))].sort();
-        fill(
-          $("country"),
-          countries.map((c) => ({ value: c, label: regionName(c) })),
-          "All countries",
-        );
-        fill(
-          $("language"),
-          langs.map((c) => ({ value: c, label: langName(c) })),
-          "All languages",
-        );
+    function paint(pack: { named?: [string, string, string][]; blanket?: [string, string][]; sites?: [string, string, string, string][] }) {
+      const sites = pack.sites || [];
+      const named = pack.named || [];
+      const blanketSet = new Set((pack.blanket || []).map((row) => row[0]));
+      const namedBy = new Map<string, Map<string, string>>();
+      for (const [domain, slug, state] of named) {
+        if (!namedBy.has(domain)) namedBy.set(domain, new Map());
+        namedBy.get(domain)!.set(slug, state);
+      }
+      const countries = [...new Set(sites.map((s) => s[2]).filter(Boolean))].sort();
+      const langs = [...new Set(sites.map((s) => s[1]).filter(Boolean))].sort();
+      fill(
+        $("country"),
+        countries.map((c) => ({ value: c, label: regionName(c) })),
+        "All countries",
+      );
+      fill(
+        $("language"),
+        langs.map((c) => ({ value: c, label: langName(c) })),
+        "All languages",
+      );
 
-        function verdict(domain: string, bot: string): "BLOCKED" | "ALLOWED" | "PARTIAL" | "BLANKET" | "" {
-          const namedState = namedBy.get(domain)?.get(bot);
-          if (namedState) return namedState as "BLOCKED" | "ALLOWED" | "PARTIAL";
-          if (blanketSet.has(domain)) return "BLANKET";
-          return "";
+      function verdict(domain: string, bot: string): "BLOCKED" | "ALLOWED" | "PARTIAL" | "BLANKET" | "" {
+        const namedState = namedBy.get(domain)?.get(bot);
+        if (namedState) return namedState as "BLOCKED" | "ALLOWED" | "PARTIAL";
+        if (blanketSet.has(domain)) return "BLANKET";
+        return "";
+      }
+      function label(v: string) {
+        if (v === "BLANKET") return `<span class="badge badge-blanket">Block all bots</span>`;
+        if (v === "BLOCKED") return `<span class="badge badge-block">Blocked</span>`;
+        if (v === "ALLOWED") return `<span class="badge badge-allow">Allowed</span>`;
+        if (v === "PARTIAL") return `<span class="badge badge-partial">Mixed</span>`;
+        return "—";
+      }
+      function render() {
+        const country = $("country").value;
+        const category = $("category").value;
+        const language = $("language").value;
+        const bot = $("bot").value || "openai-gptbot";
+        const botLabel = ([...$("bot").options].find((o) => o.value === bot)?.text || bot).trim();
+        const q = ((host.querySelector('[data-m="q"]') as HTMLInputElement)?.value || "").trim().toLowerCase();
+        const onlyBlocked = Boolean((host.querySelector('[data-m="blocked"]') as HTMLInputElement)?.checked);
+        const rank: Record<string, number> = { BLANKET: 0, BLOCKED: 1, PARTIAL: 2, ALLOWED: 3, "": 4 };
+        const matched: [string, string, string, string, string][] = [];
+        let blocked = 0;
+        for (const [domain, lang, cc, cat] of sites) {
+          if (country && cc !== country) continue;
+          if (category && cat !== category) continue;
+          if (language && lang !== language) continue;
+          const v = verdict(domain, bot);
+          if (v === "BLOCKED" || v === "BLANKET") blocked += 1;
+          matched.push([domain, cc, cat, lang, v]);
         }
-        function label(v: string) {
-          if (v === "BLANKET") return `<span class="badge badge-blanket">Block all bots</span>`;
-          if (v === "BLOCKED") return `<span class="badge badge-block">Blocked</span>`;
-          if (v === "ALLOWED") return `<span class="badge badge-allow">Allowed</span>`;
-          if (v === "PARTIAL") return `<span class="badge badge-partial">Mixed</span>`;
-          return "—";
+        const total = matched.length;
+        const pct = total ? Math.round((blocked / total) * 100) : 0;
+        const who = [
+          category && category !== "other" ? (VERT[category] || category).toLowerCase() + " sites" : "sites",
+          country ? `in ${regionName(country)}` : "",
+          language ? `in ${langName(language)}` : "",
+        ].filter(Boolean).join(" ");
+        answer.textContent = total
+          ? `${pct}% of ${who} block ${botLabel}`
+          : "Nothing in this slice yet.";
+        sub.textContent = total
+          ? `${blocked.toLocaleString("en-US")} of ${total.toLocaleString("en-US")} ${preview ? "well-known sites in this sample" : "sites in this list"}.`
+          : "Try a broader country or type.";
+        const rows = matched
+          .filter((row) => {
+            if (q && !row[0].includes(q)) return false;
+            if (onlyBlocked && row[4] !== "BLOCKED" && row[4] !== "BLANKET") return false;
+            return true;
+          })
+          .sort((a, b) => (rank[a[4]] ?? 9) - (rank[b[4]] ?? 9) || a[0].localeCompare(b[0]));
+        const shown = rows.slice(0, MAX);
+        count.textContent = preview
+          ? `${shown.length} of 100 sample sites`
+          : rows.length > MAX
+            ? `Showing ${shown.length} of ${rows.length.toLocaleString("en-US")}. Search or narrow the filters to see more.`
+            : `${rows.length.toLocaleString("en-US")} websites`;
+        if (!shown.length) {
+          body.innerHTML = `<tr><td colspan="5" class="empty-cell">No rows for these filters.</td></tr>`;
+          return;
         }
-        function render() {
-          const country = $("country").value;
-          const category = $("category").value;
-          const language = $("language").value;
-          const bot = $("bot").value || "openai-gptbot";
-          const botLabel = ([...$("bot").options].find((o) => o.value === bot)?.text || bot).trim();
-          const q = ((host.querySelector('[data-m="q"]') as HTMLInputElement)?.value || "").trim().toLowerCase();
-          const onlyBlocked = Boolean((host.querySelector('[data-m="blocked"]') as HTMLInputElement)?.checked);
-          const rank: Record<string, number> = { BLANKET: 0, BLOCKED: 1, PARTIAL: 2, ALLOWED: 3, "": 4 };
-          const matched: [string, string, string, string, string][] = [];
-          let blocked = 0;
-          for (const [domain, lang, cc, cat] of sites) {
-            if (country && cc !== country) continue;
-            if (category && cat !== category) continue;
-            if (language && lang !== language) continue;
-            const v = verdict(domain, bot);
-            if (v === "BLOCKED" || v === "BLANKET") blocked += 1;
-            matched.push([domain, cc, cat, lang, v]);
+        body.innerHTML = shown
+          .map(
+            ([domain, cc, cat, lang, v]) => `<tr>
+              <td>${preview ? esc(domain) : `<a href="/domain/${encodeURIComponent(domain)}">${esc(domain)}</a>`}</td>
+              <td>${esc(regionName(cc))}</td>
+              <td>${esc(VERT[cat] || cat || "—")}</td>
+              <td>${esc(langName(lang))}</td>
+              <td>${label(v)}</td>
+            </tr>`,
+          )
+          .join("");
+      }
+      host.querySelectorAll("[data-m]").forEach((el) => {
+        el.addEventListener("change", render);
+        el.addEventListener("input", render);
+      });
+      render();
+    }
+
+    const liveUrl = preview ? "/snapshot/preview.json" : "/api/lookup";
+    const start = data.pack && (data.pack.sites || []).length ? Promise.resolve(data.pack) : Promise.reject();
+    start
+      .catch(() =>
+        fetch(liveUrl, { cache: "no-store" }).then((res) => {
+          if (res.status === 401 || res.status === 402) {
+            window.location.href = res.status === 401 ? "/sign-in?redirect_url=/app" : "/pricing";
+            throw new Error(String(res.status));
           }
-          const total = matched.length;
-          const pct = total ? Math.round((blocked / total) * 100) : 0;
-          const who = [
-            category && category !== "other" ? (VERT[category] || category).toLowerCase() + " sites" : "sites",
-            country ? `in ${regionName(country)}` : "",
-            language ? `in ${langName(language)}` : "",
-          ].filter(Boolean).join(" ");
-          answer.textContent = total
-            ? `${pct}% of ${who} block ${botLabel}`
-            : "Nothing in this slice yet.";
-          sub.textContent = total
-            ? `${blocked.toLocaleString("en-US")} of ${total.toLocaleString("en-US")} sites in this list.`
-            : "Try a broader country or type.";
-          const rows = matched
-            .filter((row) => {
-              if (q && !row[0].includes(q)) return false;
-              if (onlyBlocked && row[4] !== "BLOCKED" && row[4] !== "BLANKET") return false;
-              return true;
+          if (!res.ok) throw new Error(String(res.status));
+          return res.json();
+        }),
+      )
+      .then((pack) => {
+        paint(pack);
+        if (preview) {
+          fetch("/snapshot/preview.json", { cache: "no-store" })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((live) => {
+              if (live && (live.sites || []).length) paint(live);
             })
-            .sort((a, b) => (rank[a[4]] ?? 9) - (rank[b[4]] ?? 9) || a[0].localeCompare(b[0]));
-          const shown = rows.slice(0, MAX);
-          count.textContent =
-            rows.length > MAX
-              ? `Showing ${shown.length} of ${rows.length.toLocaleString("en-US")}. Search or narrow the filters to see more.`
-              : `${rows.length.toLocaleString("en-US")} websites`;
-          if (!shown.length) {
-            body.innerHTML = `<tr><td colspan="5" class="empty-cell">No rows for these filters.</td></tr>`;
-            return;
-          }
-          body.innerHTML = shown
-            .map(
-              ([domain, cc, cat, lang, v]) => `<tr>
-                <td><a href="/domain/${encodeURIComponent(domain)}">${esc(domain)}</a></td>
-                <td>${esc(regionName(cc))}</td>
-                <td>${esc(VERT[cat] || cat || "—")}</td>
-                <td>${esc(langName(lang))}</td>
-                <td>${label(v)}</td>
-              </tr>`,
-            )
-            .join("");
+            .catch(() => {});
         }
-        host.querySelectorAll("[data-m]").forEach((el) => {
-          el.addEventListener("change", render);
-          el.addEventListener("input", render);
-        });
-        render();
       })
       .catch(() => {
-        answer.textContent = "This table is still filling from today’s crawl.";
-        sub.textContent = "Refresh later — the filters stay, the rows will appear.";
+        if (data.pack && (data.pack.sites || []).length) {
+          paint(data.pack);
+          return;
+        }
+        answer.textContent = preview
+          ? "Sample table is warming up."
+          : "This table is still filling from today’s crawl.";
+        sub.textContent = preview ? "The 100 names are here; rules appear when the snapshot is published." : "Refresh later.";
         body.innerHTML = `<tr><td colspan="5" class="empty-cell">No rows yet.</td></tr>`;
       });
   }

@@ -1,0 +1,9 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { SignIn } from "@clerk/astro/components";
+---
+<Layout title="Sign in — Crawl Policy Index" description="Sign in to Crawl Policy Index.">
+  <div class="auth-box">
+    <SignIn path="/sign-in" fallbackRedirectUrl="/app" />
+  </div>
+</Layout>

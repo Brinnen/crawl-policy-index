@@ -195,6 +195,75 @@ main { flex: 1; padding: 2.5rem 0 4.5rem; }
   align-items: stretch;
   padding: 1.2rem 0 0.4rem;
 }
+.hero-sell {
+  grid-template-columns: 1fr;
+  padding-bottom: 0.4rem;
+}
+.hero-sell h1 { max-width: 14em; }
+.nav-text {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.84rem;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.nav-text:hover {
+  color: var(--fg);
+  background: var(--bg-card);
+}
+.btn-nav {
+  padding: 0.42rem 0.9rem;
+  font-size: 0.84rem;
+}
+.paywall-band {
+  margin-top: 1.4rem;
+  padding: 1.15rem 1.2rem;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+  background: var(--accent-dim);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 1.2rem;
+  align-items: center;
+  justify-content: space-between;
+}
+.paywall-band p {
+  margin: 0;
+  max-width: 40rem;
+  color: var(--fg);
+  font-weight: 600;
+}
+.pricing-card {
+  max-width: 28rem;
+  margin: 1.5rem 0;
+  padding: 1.5rem 1.6rem 1.4rem;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: var(--shadow);
+}
+.pricing-card .price {
+  margin: 0.35rem 0 1rem;
+  font-size: 2.2rem;
+  font-weight: 750;
+  letter-spacing: -0.05em;
+}
+.pricing-card ul {
+  margin: 0 0 1.2rem;
+  padding-left: 1.1rem;
+  color: var(--muted);
+}
+.pricing-card li { margin: 0.35rem 0; }
+.auth-box {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 0 2rem;
+}
+.market .filters { margin-top: 0; }
 .hero-copy { display: grid; gap: 1.15rem; justify-items: start; }
 .hero h1 {
   margin: 0;
@@ -266,7 +335,7 @@ main { flex: 1; padding: 2.5rem 0 4.5rem; }
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.85rem;
   margin: 2rem 0 1.5rem;
 }
