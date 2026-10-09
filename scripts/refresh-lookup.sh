@@ -30,6 +30,9 @@ export PYTHONPATH="$ROOT/parser:$ROOT/warehouse:$ROOT/warehouse/load:$ROOT/panel
 html_files=$(find "$ROOT/data/store/obs" -type f -name '*.ndjson' 2>/dev/null | grep -c html_home || true)
 echo "html_home observation files: ${html_files}"
 
+echo "Applying migrations (monthly fetch partitions)..."
+python3 "$ROOT/warehouse/migrations/apply.py"
+
 echo "Loading panel ${PANEL} with current labels..."
 python3 "$ROOT/warehouse/load/load_panel.py" --csv "$CSV" --manifest "$MANIFEST"
 

@@ -25,7 +25,7 @@ export const GET: APIRoute = async (context) => {
 
   const res = await fetch(lookupUrl, {
     headers,
-    signal: AbortSignal.timeout(25000),
+    signal: AbortSignal.timeout(55000),
   });
   if (!res.ok) {
     return new Response("lookup unavailable", { status: 502 });
