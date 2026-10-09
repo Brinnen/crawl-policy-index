@@ -161,12 +161,12 @@ def news_labels() -> dict[str, str]:
     return dict(load_labels().get("news") or {})
 
 
-def site_category(domain: str, observed: str = "") -> str:
-    return category_from_domain(domain, labeled_vertical(domain) or observed)
+def site_category(domain: str, observed: str = "", labels: dict | None = None) -> str:
+    return category_from_domain(domain, labeled_vertical(domain, labels) or observed)
 
 
-def site_country(domain: str, observed: str = "") -> str:
-    return labeled_country(domain) or observed or country_from_domain(domain)
+def site_country(domain: str, observed: str = "", labels: dict | None = None) -> str:
+    return labeled_country(domain, labels) or observed or country_from_domain(domain)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -334,13 +334,14 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 cur.execute(SITES_SQL, (panel,))
                 lookup_sites = []
+                labels = load_labels()
                 for domain, lang, country, vertical in cur.fetchall():
                     lookup_sites.append(
                         [
                             domain,
                             lang,
-                            site_country(domain, country),
-                            site_category(domain, vertical),
+                            site_country(domain, country, labels),
+                            site_category(domain, vertical, labels),
                         ]
                     )
                 by_country = []
