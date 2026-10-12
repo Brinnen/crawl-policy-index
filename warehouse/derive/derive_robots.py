@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import sys
+from collections import OrderedDict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,46 +47,78 @@ def main(argv: list[str] | None = None) -> int:
 
     import psycopg
 
-    with psycopg.connect(dsn) as conn:
-        with conn.cursor() as cur:
-            cur.execute(OBS_SQL, (args.panel_version,))
-            rows = cur.fetchall()
-        by_domain: dict[str, list] = {}
-        shas: set[str] = set()
-        for domain, run_date, sha, outcome, ctype in rows:
-            by_domain.setdefault(domain, []).append((run_date, sha, outcome, ctype))
-            if sha:
-                shas.add(sha)
-
-        parsed_cache: dict[str, dict] = {}
-        with conn.cursor() as cur:
-            for sha in shas:
-                try:
-                    parsed_cache[sha] = _parse_blob(cur, store, sha)
-                except Exception as exc:
-                    print(f"WARNING: blob {sha[:12]} parse failed: {exc}", file=sys.stderr)
-                    parsed_cache[sha] = {"verdict": "empty", "body": b""}
-
-        domains = 0
-        failed = 0
-        with conn.cursor() as cur:
-            for domain, series in by_domain.items():
-                cur.execute("SAVEPOINT derive_domain")
-                try:
-                    _derive_domain(cur, domain, series, parsed_cache, tokens)
-                    cur.execute("RELEASE SAVEPOINT derive_domain")
-                except Exception as exc:
-                    cur.execute("ROLLBACK TO SAVEPOINT derive_domain")
-                    failed += 1
-                    print(f"WARNING: derive skipped {domain}: {exc}", file=sys.stderr)
-                domains += 1
-                if domains % 10000 == 0:
-                    print(f"  … derived {domains} / {len(by_domain)}")
-        conn.commit()
+    domains = 0
+    failed = 0
+    with psycopg.connect(dsn) as read_conn, psycopg.connect(dsn) as write_conn:
+        cache = _ParseCache(write_conn, store, maxsize=256)
+        current = None
+        series: list = []
+        with read_conn.cursor(name="robots_obs") as rcur:
+            rcur.itersize = 2000
+            rcur.execute(OBS_SQL, (args.panel_version,))
+            with write_conn.cursor() as wcur:
+                for domain, run_date, sha, outcome, ctype in rcur:
+                    if current is None:
+                        current = domain
+                    if domain != current:
+                        failed += _flush_domain(wcur, current, series, cache, tokens)
+                        domains += 1
+                        series = []
+                        current = domain
+                        if domains % 500 == 0:
+                            write_conn.commit()
+                        if domains % 10000 == 0:
+                            print(f"  … derived {domains}")
+                    series.append((run_date, sha, outcome, ctype))
+                if current is not None:
+                    failed += _flush_domain(wcur, current, series, cache, tokens)
+                    domains += 1
+        write_conn.commit()
     print(
         f"derived {domains} domains ({failed} skipped) at parse_version={PARSE_VERSION}"
     )
     return 0
+
+
+def _flush_domain(cur, domain: str, series: list, cache: "_ParseCache", tokens) -> int:
+    cur.execute("SAVEPOINT derive_domain")
+    try:
+        _derive_domain(cur, domain, series, cache, tokens)
+        cur.execute("RELEASE SAVEPOINT derive_domain")
+        return 0
+    except Exception as exc:
+        cur.execute("ROLLBACK TO SAVEPOINT derive_domain")
+        print(f"WARNING: derive skipped {domain}: {exc}", file=sys.stderr)
+        return 1
+
+
+class _ParseCache:
+    """Keep a few parsed robots.txt files. Never hold every blob in RAM."""
+
+    def __init__(self, conn, store: Path, maxsize: int = 256) -> None:
+        self.conn = conn
+        self.store = store
+        self.maxsize = maxsize
+        self._data: OrderedDict[str, dict] = OrderedDict()
+
+    def get(self, sha: str | None) -> dict:
+        if not sha:
+            return {"verdict": "empty"}
+        hit = self._data.get(sha)
+        if hit is not None:
+            self._data.move_to_end(sha)
+            return hit
+        with self.conn.cursor() as cur:
+            try:
+                info = _parse_blob(cur, self.store, sha)
+            except Exception as exc:
+                print(f"WARNING: blob {sha[:12]} parse failed: {exc}", file=sys.stderr)
+                info = {"verdict": "empty"}
+        info.pop("body", None)
+        self._data[sha] = info
+        if len(self._data) > self.maxsize:
+            self._data.popitem(last=False)
+        return info
 
 
 def _blob_path(store: Path, sha: str) -> Path:
@@ -106,7 +139,7 @@ def _parse_blob(cur, store: Path, sha: str) -> dict:
         """,
         (verdict, PARSE_VERSION, sha),
     )
-    out: dict = {"verdict": verdict, "body": body}
+    out: dict = {"verdict": verdict}
     if verdict == "robots":
         parsed = parse_robots(body)
         wc_state, has_wc = derive_wildcard(parsed)
