@@ -1,4 +1,4 @@
-"""Fill language and site type from html_home observations. Does not fetch."""
+"""Fill language, country, and site type from html_home observations. Does not fetch."""
 
 from __future__ import annotations
 
@@ -13,19 +13,20 @@ sys.path.insert(0, str(ROOT / "parser"))
 sys.path.insert(0, str(ROOT / "panel"))
 
 from cpi_parser.category import category_from_html  # noqa: E402
+from cpi_parser.html_country import country_from_html  # noqa: E402
 from cpi_parser.html_lang import detect_html_language  # noqa: E402
-from labels import labeled_vertical  # noqa: E402
+from labels import labeled_vertical, load_labels  # noqa: E402
 from warehouse.cctld import category_from_domain  # noqa: E402
 from warehouse.dsn import database_dsn  # noqa: E402
 
 UPSERT = """
 INSERT INTO domain_language (
     domain, language, language_source, observed_at, content_sha256,
-    http_status, panel_version, robots_allowed, category
+    http_status, panel_version, robots_allowed, category, country
 ) VALUES (
     %(domain)s, %(language)s, %(language_source)s, %(observed_at)s,
     %(content_sha256)s, %(http_status)s, %(panel_version)s, %(robots_allowed)s,
-    %(category)s
+    %(category)s, %(country)s
 )
 ON CONFLICT (domain) DO UPDATE SET
     language = COALESCE(EXCLUDED.language, domain_language.language),
@@ -44,6 +45,12 @@ ON CONFLICT (domain) DO UPDATE SET
       NULLIF(domain_language.category, 'other'),
       EXCLUDED.category,
       domain_language.category
+    ),
+    country = COALESCE(
+      NULLIF(EXCLUDED.country, ''),
+      NULLIF(domain_language.country, ''),
+      EXCLUDED.country,
+      domain_language.country
     );
 """
 
@@ -74,18 +81,23 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
     dsn = args.dsn or database_dsn()
     store = Path(args.store)
+    labels = load_labels()
 
     import psycopg
 
     assigned = 0
     unknown = 0
     skipped_robots = 0
+    countries = 0
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
             cur.execute(OBS_SQL, (args.panel_version,))
             rows = cur.fetchall()
-            for domain, outcome, sha, status, fetched_at, panel_version, _err in rows:
+            for i, (domain, outcome, sha, status, fetched_at, panel_version, _err) in enumerate(
+                rows, start=1
+            ):
                 html_cat = ""
+                html_cc = ""
                 body = b""
                 if outcome == "ok" and sha:
                     try:
@@ -94,7 +106,10 @@ def main(argv: list[str] | None = None) -> int:
                         body = b""
                 if body:
                     html_cat = category_from_html(body)
-                cat = category_from_domain(domain, labeled_vertical(domain) or html_cat)
+                    html_cc = country_from_html(body)
+                cat = category_from_domain(domain, labeled_vertical(domain, labels) or html_cat)
+                if html_cc:
+                    countries += 1
                 if outcome == "skipped_robots":
                     cur.execute(
                         UPSERT,
@@ -108,41 +123,48 @@ def main(argv: list[str] | None = None) -> int:
                             "panel_version": panel_version,
                             "robots_allowed": False,
                             "category": cat,
+                            "country": html_cc or None,
                         },
                     )
                     skipped_robots += 1
                     unknown += 1
-                    continue
-                lang = None
-                source = "http_error"
-                if outcome == "ok" and body:
-                    lang, source = detect_html_language(body)
-                elif outcome == "ok" and sha:
-                    source = "missing"
-                elif outcome in {"not_found", "empty_body"}:
-                    source = "missing"
-                cur.execute(
-                    UPSERT,
-                    {
-                        "domain": domain,
-                        "language": lang,
-                        "language_source": source if lang or source != "html_lang" else "missing",
-                        "observed_at": fetched_at,
-                        "content_sha256": sha,
-                        "http_status": status,
-                        "panel_version": panel_version,
-                        "robots_allowed": True,
-                        "category": cat,
-                    },
-                )
-                if lang:
-                    assigned += 1
                 else:
-                    unknown += 1
+                    lang = None
+                    source = "http_error"
+                    if outcome == "ok" and body:
+                        lang, source = detect_html_language(body)
+                    elif outcome == "ok" and sha:
+                        source = "missing"
+                    elif outcome in {"not_found", "empty_body"}:
+                        source = "missing"
+                    cur.execute(
+                        UPSERT,
+                        {
+                            "domain": domain,
+                            "language": lang,
+                            "language_source": source if lang or source != "html_lang" else "missing",
+                            "observed_at": fetched_at,
+                            "content_sha256": sha,
+                            "http_status": status,
+                            "panel_version": panel_version,
+                            "robots_allowed": True,
+                            "category": cat,
+                            "country": html_cc or None,
+                        },
+                    )
+                    if lang:
+                        assigned += 1
+                    else:
+                        unknown += 1
+                if i % 500 == 0:
+                    conn.commit()
+                if i % 10000 == 0:
+                    print(f"  … language {i}", flush=True)
         conn.commit()
     print(
         f"language assigned={assigned} unknown={unknown} "
-        f"robots_disallow={skipped_robots} (existing rows kept)"
+        f"robots_disallow={skipped_robots} html_country={countries} "
+        f"(existing rows kept)"
     )
     return 0
 

@@ -77,8 +77,14 @@ const preview = mode === "preview";
       Only sites that block this bot
     </label>
   )}
+  {!preview && (
+    <p class="explorer-meta explorer-actions">
+      <button type="button" class="btn btn-ghost" data-download>Download CSV</button>
+    </p>
+  )}
   <p class="answer" data-answer>Loading the tables…</p>
   <p class="instrument-sub" data-answer-sub></p>
+  <p class="instrument-sub" data-coverage></p>
   <div class="table-scroll">
     <table class="data">
       <thead>
@@ -110,7 +116,7 @@ const preview = mode === "preview";
     const MAX = preview ? 100 : 200;
 
     function regionName(code: string) {
-      if (!code) return "—";
+      if (!code) return "Not declared";
       if (COUNTRY[code]) return COUNTRY[code];
       try {
         return new Intl.DisplayNames(["en"], { type: "region" }).of(code) || code;
@@ -119,7 +125,7 @@ const preview = mode === "preview";
       }
     }
     function langName(code: string) {
-      if (!code) return "—";
+      if (!code) return "Not declared";
       if (LANG[code]) return LANG[code];
       try {
         return new Intl.DisplayNames(["en"], { type: "language" }).of(code) || code;
@@ -139,6 +145,8 @@ const preview = mode === "preview";
     const $ = (name: string) => host.querySelector(`[data-m="${name}"]`) as HTMLSelectElement;
     const answer = host.querySelector("[data-answer]") as HTMLElement;
     const sub = host.querySelector("[data-answer-sub]") as HTMLElement;
+    const coverage = host.querySelector("[data-coverage]") as HTMLElement | null;
+    const downloadBtn = host.querySelector("[data-download]") as HTMLButtonElement | null;
     const body = host.querySelector("[data-rows]") as HTMLElement;
     const count = host.querySelector("[data-count]") as HTMLElement;
 
@@ -178,6 +186,40 @@ const preview = mode === "preview";
         if (v === "ALLOWED") return `<span class="badge badge-allow">Allowed</span>`;
         if (v === "PARTIAL") return `<span class="badge badge-partial">Mixed</span>`;
         return "—";
+      }
+      if (coverage && !preview) {
+        const typed = sites.filter((s) => s[3] && s[3] !== "other").length;
+        const withCc = sites.filter((s) => s[2]).length;
+        const withLang = sites.filter((s) => s[1]).length;
+        coverage.textContent =
+          `${sites.length.toLocaleString("en-US")} sites · ` +
+          `${typed.toLocaleString("en-US")} with a type · ` +
+          `${withCc.toLocaleString("en-US")} with a country · ` +
+          `${withLang.toLocaleString("en-US")} with a language · ` +
+          `every row has a crawl rule`;
+      }
+      if (downloadBtn) {
+        downloadBtn.onclick = () => {
+          const bots = (data.agents || []).map((a: { slug: string }) => a.slug);
+          const csvCell = (value: string) => {
+            const s = String(value ?? "");
+            return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+          };
+          const header = ["domain", "language", "country", "category", "blanket", ...bots];
+          const lines = [header.join(",")];
+          for (const [domain, lang, cc, cat] of sites) {
+            const row = [domain, lang, cc, cat, blanketBy.get(domain) || ""];
+            for (const slug of bots) row.push(verdict(domain, slug));
+            lines.push(row.map(csvCell).join(","));
+          }
+          const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "crawl-policy-index.csv";
+          a.click();
+          URL.revokeObjectURL(url);
+        };
       }
       function render() {
         const country = $("country").value;
@@ -233,7 +275,7 @@ const preview = mode === "preview";
             ([domain, cc, cat, lang, v]) => `<tr>
               <td>${preview ? esc(domain) : `<a href="/domain/${encodeURIComponent(domain)}">${esc(domain)}</a>`}</td>
               <td>${esc(regionName(cc))}</td>
-              <td>${esc(VERT[cat] || cat || "—")}</td>
+              <td>${esc(VERT[cat] || cat || "Unknown")}</td>
               <td>${esc(langName(lang))}</td>
               <td>${label(v)}</td>
             </tr>`,

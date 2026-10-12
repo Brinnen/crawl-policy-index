@@ -14,6 +14,7 @@ def test_published_export_uses_verified_agents_only():
     assert "LOOKUP_BLANKET_SQL" in src
     assert "has_wildcard_group" in src
     assert "SITES_SQL" in src
+    assert "dl.country" in src
     assert "PREVIEW_HOSTS_SQL" in src
     assert "preview.json" in src
     assert "showcase_hosts" in src

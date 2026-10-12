@@ -17,6 +17,7 @@ DOMAIN_RE = re.compile(
 )
 
 DEFAULT_LABELS = Path(__file__).resolve().parents[1] / "registry" / "verticals.yml"
+_LABELS_CACHE: dict[str, Any] | None = None
 
 KNOWN_VERTICALS = {
     "news",
@@ -50,7 +51,10 @@ def _domain(value: object) -> str:
 
 
 def load_labels(path: Path | None = None) -> dict[str, Any]:
+    global _LABELS_CACHE
     src = path or DEFAULT_LABELS
+    if path is None and _LABELS_CACHE is not None:
+        return _LABELS_CACHE
     data = yaml.safe_load(src.read_text(encoding="utf-8")) or {}
     news: dict[str, str] = {}
     for row in data.get("news_domains") or []:
@@ -72,7 +76,10 @@ def load_labels(path: Path | None = None) -> dict[str, Any]:
         if vertical not in KNOWN_VERTICALS:
             vertical = ""
         known[domain] = {"vertical": vertical, "country": _country(row.get("country"))}
-    return {"news": news, "known": known}
+    parsed = {"news": news, "known": known}
+    if path is None:
+        _LABELS_CACHE = parsed
+    return parsed
 
 
 def labeled_country(domain: str, labels: dict[str, Any] | None = None) -> str:

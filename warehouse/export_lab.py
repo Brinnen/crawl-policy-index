@@ -94,7 +94,7 @@ SITES_SQL = """
 SELECT
     pd.domain,
     COALESCE(dl.language, ''),
-    COALESCE(pd.country::text, ''),
+    COALESCE(pd.country::text, dl.country, ''),
     COALESCE(NULLIF(pd.vertical, 'other'), dl.category, 'other')
 FROM panel_domain pd
 LEFT JOIN domain_language dl ON dl.domain = pd.domain

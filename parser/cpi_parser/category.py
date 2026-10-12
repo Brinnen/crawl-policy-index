@@ -1,23 +1,35 @@
-"""Rough site category from homepage HTML. Best-effort product filter."""
+"""Site type from homepage HTML. Best-effort product filter. Unknown is valid."""
 
 from __future__ import annotations
 
 import re
 
 NEWS_JSON = re.compile(
-    r"NewsMediaOrganization|ReportageNewsArticle",
+    r"NewsMediaOrganization|ReportageNewsArticle|NewsArticle",
     re.I,
 )
-SHOP_JSON = re.compile(r'"@type"\s*:\s*"OnlineStore"', re.I)
-EDU_JSON = re.compile(r"CollegeOrUniversity", re.I)
+SHOP_JSON = re.compile(
+    r'"@type"\s*:\s*"?(OnlineStore|Store)"?',
+    re.I,
+)
+EDU_JSON = re.compile(r"CollegeOrUniversity|EducationalOrganization", re.I)
 GOV_JSON = re.compile(r"GovernmentOrganization", re.I)
+TRAVEL_JSON = re.compile(r"LodgingBusiness|TravelAgency|Airline", re.I)
+SHOP_PLATFORM = re.compile(
+    r"cdn\.shopify\.com|Shopify\.theme|myshopify\.com|woocommerce|wc-ajax|"
+    r"Mage\.Cookies|cdn\.bigcommerce\.com",
+    re.I,
+)
 
 NEWS_WORDS = re.compile(
-    r"\b(breaking news|newspaper|tidning|zeitung|noticias|newswire)\b",
+    r"\b(breaking news|latest news|top stories|newspaper|tidning|zeitung|"
+    r"noticias|notizie|actualité|nachrichten|новини|новости|newswire)\b",
     re.I,
 )
 SHOP_WORDS = re.compile(
-    r"\b(add to cart|webshop|web shop)\b",
+    r"\b(add to cart|add to bag|add to basket|webshop|web shop|"
+    r"añadir al carrito|in den warenkorb|ajouter au panier|"
+    r"toevoegen aan winkelwagen|adicionar ao carrinho)\b",
     re.I,
 )
 EDU_WORDS = re.compile(
@@ -41,6 +53,12 @@ def category_from_html(body: bytes | str) -> str:
         return "gov"
     if EDU_JSON.search(text) or EDU_WORDS.search(text):
         return "edu"
-    if SHOP_JSON.search(text) or SHOP_WORDS.search(text):
+    if (
+        SHOP_JSON.search(text)
+        or SHOP_PLATFORM.search(text)
+        or SHOP_WORDS.search(text)
+    ):
         return "ecommerce"
+    if TRAVEL_JSON.search(text):
+        return "travel"
     return "other"

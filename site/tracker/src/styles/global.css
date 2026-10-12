@@ -528,6 +528,9 @@ table.data th.num {
   color: var(--muted);
   font-size: 0.85rem;
 }
+.explorer-actions {
+  margin-top: 0.85rem;
+}
 .answer {
   font-size: 1.55rem;
   font-weight: 750;
