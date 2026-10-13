@@ -34,11 +34,6 @@ const bots = compact ? view.bots.slice(0, 4) : view.bots;
       {view.blanket === "BLOCKED" && (
         <p class="site-card-note">This site also has a blanket rule: stay out, all bots.</p>
       )}
-      {view.blanket === "PARTIAL" && (
-        <p class="site-card-note">
-          The all-bots rule is mixed: some paths open, some closed. That is not a verdict on a named crawler.
-        </p>
-      )}
       <ul class="bot-rows">
         {view.bots.map((bot) => (
           <li class={`bot-row is-${bot.verdict.toLowerCase()}`}>

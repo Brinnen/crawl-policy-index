@@ -103,9 +103,7 @@ export function normalizeDomain(raw: string): string {
 
 export function verdictLabel(verdict: Verdict): string {
   if (verdict === "BLOCKED" || verdict === "BLANKET") return "Blocked";
-  if (verdict === "ALLOWED") return "Allowed";
-  if (verdict === "PARTIAL") return "Some paths";
-  return "Didn't say";
+  return "Open";
 }
 
 export function botLine(slug: string, fallback?: string): string {
@@ -174,12 +172,13 @@ export function verdictFor(
   blanketBy: Map<string, string>,
 ): Verdict {
   const named = namedBy.get(domain)?.get(slug);
-  // Mixed path rules belong on a bot only when that bot was named.
-  // The * group is a rule for crawlers in general — do not copy it onto GPTBot.
-  if (named === "BLOCKED" || named === "ALLOWED" || named === "PARTIAL") return named;
+  // A named crawler is open or blocked. Disallowing search, login, or other
+  // utility paths still means the homepage — the site — is open.
+  if (named === "BLOCKED") return "BLOCKED";
+  if (named === "ALLOWED" || named === "PARTIAL") return "ALLOWED";
   const star = blanketBy.get(domain);
   if (star === "BLOCKED") return "BLANKET";
-  return "DEFAULT";
+  return "ALLOWED";
 }
 
 function indexPack(pack: LookupPack) {
@@ -204,24 +203,19 @@ function headlineFor(domain: string, bots: BotChip[], blanket: string): string {
   const blocked = bots
     .filter((bot) => bot.verdict === "BLOCKED" || bot.verdict === "BLANKET")
     .map((bot) => bot.line);
-  const allowed = bots.filter((bot) => bot.verdict === "ALLOWED").map((bot) => bot.line);
-  const somePaths = bots.filter((bot) => bot.verdict === "PARTIAL").map((bot) => bot.line);
+  const open = bots
+    .filter((bot) => bot.verdict !== "BLOCKED" && bot.verdict !== "BLANKET")
+    .map((bot) => bot.line);
   if (blanket === "BLOCKED" && blocked.length >= 3) {
     return `${domain} told every crawler to stay out.`;
   }
-  const parts: string[] = [];
-  if (blocked.length) parts.push(`blocks ${andList(blocked)}`);
-  if (somePaths.length) parts.push(`lets ${andList(somePaths)} into some paths only`);
-  if (allowed.length) {
-    const allowBit = `still allows ${andList(allowed)}`;
-    if (parts.length) return `${domain} ${parts[0]}. It ${allowBit}.`;
-    return `${domain} named a yes for ${andList(allowed)}.`;
+  if (blocked.length) {
+    if (open.length) {
+      return `${domain} blocks ${andList(blocked)}. It still allows ${andList(open)}.`;
+    }
+    return `${domain} blocks ${andList(blocked)}.`;
   }
-  if (parts.length) return `${domain} ${parts.join(", and ")}.`;
-  if (blanket === "PARTIAL") {
-    return `${domain} did not name the main AI crawlers. Its all-bots rule is mixed — some paths open, some closed.`;
-  }
-  return `${domain} did not name the main AI crawlers. By default, they may crawl.`;
+  return `${domain} is open to the main AI crawlers.`;
 }
 
 export function buildSiteView(
@@ -248,7 +242,7 @@ export function buildSiteView(
   for (const [slug, state] of named || []) {
     if (face.has(slug)) continue;
     const meta = metaBy.get(slug);
-    const verdict = (state as Verdict) || "DEFAULT";
+    const verdict: Verdict = state === "BLOCKED" ? "BLOCKED" : "ALLOWED";
     extras.push({
       slug,
       token: meta?.token || slug,

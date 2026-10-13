@@ -172,9 +172,10 @@ const preview = mode === "preview";
         "All languages",
       );
 
-      function verdict(domain: string, bot: string): "BLOCKED" | "ALLOWED" | "PARTIAL" | "BLANKET" {
+      function verdict(domain: string, bot: string): "BLOCKED" | "ALLOWED" | "BLANKET" {
         const namedState = namedBy.get(domain)?.get(bot);
-        if (namedState === "BLOCKED" || namedState === "ALLOWED" || namedState === "PARTIAL") return namedState;
+        if (namedState === "BLOCKED") return "BLOCKED";
+        if (namedState === "ALLOWED" || namedState === "PARTIAL") return "ALLOWED";
         const star = blanketBy.get(domain);
         if (star === "BLOCKED") return "BLANKET";
         return "ALLOWED";
@@ -182,9 +183,7 @@ const preview = mode === "preview";
       function label(v: string) {
         if (v === "BLANKET") return `<span class="badge badge-blanket">Block all bots</span>`;
         if (v === "BLOCKED") return `<span class="badge badge-block">Blocked</span>`;
-        if (v === "ALLOWED") return `<span class="badge badge-allow">Allowed</span>`;
-        if (v === "PARTIAL") return `<span class="badge badge-partial">Some paths</span>`;
-        return "—";
+        return `<span class="badge badge-allow">Open</span>`;
       }
       if (coverage && !preview) {
         const typed = sites.filter((s) => s[3] && s[3] !== "other").length;
@@ -228,7 +227,7 @@ const preview = mode === "preview";
         const botLabel = ([...$("bot").options].find((o) => o.value === bot)?.text || bot).trim();
         const q = ((host.querySelector('[data-m="q"]') as HTMLInputElement)?.value || "").trim().toLowerCase();
         const onlyBlocked = Boolean((host.querySelector('[data-m="blocked"]') as HTMLInputElement)?.checked);
-        const rank: Record<string, number> = { BLANKET: 0, BLOCKED: 1, PARTIAL: 2, ALLOWED: 3 };
+        const rank: Record<string, number> = { BLANKET: 0, BLOCKED: 1, ALLOWED: 2 };
         const matched: [string, string, string, string, string][] = [];
         let blocked = 0;
         for (const [domain, lang, cc, cat] of sites) {
