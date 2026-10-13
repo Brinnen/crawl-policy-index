@@ -1,9 +1,17 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import DomainView from "../../components/DomainView.astro";
+import { normalizeDomain } from "../../lib/story";
 
-const domain = decodeURIComponent(Astro.params.domain || "");
+const domain = normalizeDomain(decodeURIComponent(Astro.params.domain || ""));
 ---
-<Layout title={`${domain || "Website"} — Crawl Policy Index`}>
-  <DomainView domain={domain} rows={[]} />
+<Layout
+  title={domain ? `${domain} — who it tells AI crawlers to be` : "Look up a website"}
+  description={
+    domain
+      ? `What ${domain} says in robots.txt about GPTBot, Claude, Google, and the rest.`
+      : "Look up a website and read its AI crawl rules in English."
+  }
+>
+  <DomainView domain={domain} />
 </Layout>

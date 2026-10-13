@@ -1,10 +1,14 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import DomainView from "../../components/DomainView.astro";
+import { normalizeDomain } from "../../lib/story";
+
+const q = normalizeDomain(Astro.url.searchParams.get("q") || "");
+if (q) return Astro.redirect(`/domain/${encodeURIComponent(q)}`);
 ---
 <Layout
-  title="Website — Crawl Policy Index"
-  description="Look up which bots a website in this panel named, and whether it allowed, blocked, or mixed them."
+  title="Look up a website — Crawl Policy Index"
+  description="Type a website. We'll say in English which AI crawlers it blocks or allows."
 >
-  <DomainView domain="" rows={[]} />
+  <DomainView domain="" />
 </Layout>

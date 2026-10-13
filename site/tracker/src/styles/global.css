@@ -622,3 +622,178 @@ table.data th.num {
   .filters, .filters-3 { grid-template-columns: 1fr; }
   .glossary { grid-template-columns: 1fr; }
 }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.lookup-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  width: min(40rem, 100%);
+  margin-top: 0.35rem;
+}
+.lookup-form label { flex: 1 1 16rem; }
+.lookup-form input {
+  font: inherit;
+  width: 100%;
+  color: var(--fg);
+  background: var(--bg-elev);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 0.78rem 1rem;
+}
+.lookup-form input:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 1px;
+}
+.lookup-hint {
+  margin: 0.55rem 0 0;
+  color: var(--faint);
+  font-size: 0.85rem;
+}
+
+.famous { margin: 2.4rem 0 1.5rem; }
+.famous h2,
+.overnight h2 {
+  margin: 0.25rem 0 0.4rem;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  letter-spacing: -0.04em;
+  max-width: 22rem;
+}
+.famous .sub { margin: 0 0 1.1rem; color: var(--muted); max-width: 40rem; }
+.famous-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+@media (min-width: 860px) {
+  .famous-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.site-card {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 4px);
+  padding: 1.2rem 1.25rem 1.15rem;
+  box-shadow: var(--shadow);
+}
+.site-card-compact { padding: 1rem 1.1rem 1rem; }
+.site-card-link {
+  display: grid;
+  gap: 0.35rem;
+  color: inherit;
+  text-decoration: none;
+}
+.site-card-link:hover { text-decoration: none; }
+.site-card-link:hover .site-card-hed { color: var(--accent); }
+.site-card-host {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--accent);
+}
+.site-card-meta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--faint);
+}
+.site-card-hed {
+  margin: 0.15rem 0 0.55rem;
+  font-size: 1.05rem;
+  letter-spacing: -0.03em;
+  line-height: 1.35;
+  color: var(--fg);
+}
+.site-card-compact .site-card-hed { font-size: 0.98rem; margin-bottom: 0.45rem; }
+.site-card-note {
+  margin: 0 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.bot-pills {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.bot-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem 0.18rem 0.6rem;
+  font-size: 0.72rem;
+}
+.bot-pill strong { font-weight: 700; }
+.bot-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+.bot-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--line);
+}
+.bot-row div { display: grid; gap: 0.1rem; }
+.bot-row span { color: var(--muted); font-size: 0.86rem; }
+.bot-row em { font-style: normal; font-weight: 700; font-size: 0.86rem; }
+.is-blocked em, .is-blanket em, .bot-pill.is-blocked strong, .bot-pill.is-blanket strong { color: var(--block); }
+.is-allowed em, .bot-pill.is-allowed strong { color: var(--allow); }
+.is-partial em, .bot-pill.is-partial strong { color: var(--partial); }
+.is-default em, .bot-pill.is-default strong { color: var(--faint); }
+
+.site-more { margin-top: 1rem; color: var(--muted); }
+.site-more summary { cursor: pointer; font-weight: 650; color: var(--fg); }
+.bot-rows-more { margin-top: 0.4rem; }
+
+.overnight { margin: 2.2rem 0 0.5rem; }
+.overnight-list {
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+  max-width: 42rem;
+}
+.overnight-list a {
+  color: var(--fg);
+  display: block;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--line);
+}
+.overnight-list a:hover { color: var(--accent); }
+.overnight-when {
+  display: inline-block;
+  min-width: 4.2rem;
+  margin-right: 0.55rem;
+  color: var(--faint);
+  font-size: 0.82rem;
+  font-family: var(--mono);
+}
+
+.story-panel { padding: 1.35rem 1.4rem 1.3rem; }
+
+@media (max-width: 720px) {
+  .famous-grid { grid-template-columns: 1fr; }
+  .lookup-form { width: 100%; }
+}

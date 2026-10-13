@@ -12,6 +12,10 @@
     {
       "source": "/snapshot/preview.json",
       "destination": "http://178.128.255.20/snapshot/preview.json"
+    },
+    {
+      "source": "/snapshot/digest.json",
+      "destination": "http://178.128.255.20/snapshot/digest.json"
     }
   ],
   "headers": [
@@ -24,6 +28,13 @@
     },
     {
       "source": "/snapshot/preview.json",
+      "headers": [
+        { "key": "x-vercel-enable-rewrite-caching", "value": "0" },
+        { "key": "Cache-Control", "value": "public, max-age=60" }
+      ]
+    },
+    {
+      "source": "/snapshot/digest.json",
       "headers": [
         { "key": "x-vercel-enable-rewrite-caching", "value": "0" },
         { "key": "Cache-Control", "value": "public, max-age=60" }

@@ -1,76 +1,72 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import MarketTable from "../components/MarketTable.astro";
+import LookupForm from "../components/LookupForm.astro";
+import Overnight from "../components/Overnight.astro";
+import SiteCard from "../components/SiteCard.astro";
 import { HISTORY_PRICE_LABEL, PRICE_LABEL } from "../lib/access";
+import { agents, previewPack } from "../lib/lookupPack";
+import { FAMOUS_SITES, buildSiteView } from "../lib/story";
 import lab from "../data/lab.json";
-import preview from "../data/preview.json";
 
-const agents = lab.by_agent ?? [];
 const panel = Number(lab.summary.panel_size || 100000).toLocaleString("en-US");
-const gptbot = Number(lab.summary.gptbot_named_block || 0).toLocaleString("en-US");
+const pack = previewPack();
+const famous = FAMOUS_SITES.map((host) => buildSiteView(host, pack, agents())).filter(
+  (view): view is NonNullable<typeof view> => Boolean(view),
+);
+
+let digest: {
+  as_of?: string;
+  blocked?: number;
+  unblocked?: number;
+  named?: number;
+  changed?: number;
+  items?: { date: string; domain: string; agent: string; kind: string }[];
+} | null = null;
+try {
+  const digestUrl =
+    import.meta.env.CPI_DIGEST_URL || "http://178.128.255.20/snapshot/digest.json";
+  const res = await fetch(digestUrl, { signal: AbortSignal.timeout(4000) });
+  if (res.ok) digest = await res.json();
+} catch {
+  digest = null;
+}
 ---
 <Layout
-  title="Who blocks AI crawlers?"
-  description="Filter 100,000 websites by country, type, and language. See who blocks GPTBot, ClaudeBot, and the rest."
+  title="What does this website tell AI crawlers?"
+  description="Look up a website. We'll say in English who it blocks — GPTBot, Claude, Google, and the rest."
 >
   <section class="hero hero-sell">
     <div class="hero-copy">
-      <p class="pill"><i></i> A table you can sell, cite, and filter</p>
-      <h1>See who blocks which AI crawler.</h1>
+      <p class="pill"><i></i> Public crawl rules, in English</p>
+      <h1>What does this website tell AI crawlers?</h1>
       <p class="lede">
-        We read the public crawl rules of {panel} websites every day. You pick a country,
-        a type of site, a language, and a bot — and you get the number.
+        Type a name you already know. We read its robots.txt every day — the public file that
+        says which bots may look around — and we say it so a person can repeat it.
       </p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="#sample">Try a sample of 100 sites</a>
-        <a class="btn btn-ghost" href="/pricing">Subscribe — {PRICE_LABEL} or {HISTORY_PRICE_LABEL}</a>
-      </div>
+      <LookupForm autofocus={true} />
     </div>
   </section>
 
-  <section class="stats">
-    <div class="stat">
-      <div class="label">Sites we watch</div>
-      <span class="value" data-panel-size>{panel}</span>
-      <p class="hint">A pinned list. Not “the web”.</p>
-    </div>
-    <div class="stat">
-      <div class="label">Named GPTBot, blocked</div>
-      <span class="value" data-stat="gptbot_named_block">{gptbot}</span>
-      <p class="hint">Sites that named GPTBot and said no.</p>
-    </div>
-    <div class="stat">
-      <div class="label">Bots in the table</div>
-      <span class="value">{Math.max(0, (lab.by_agent ?? []).length - 1)}</span>
-      <p class="hint">GPTBot, ClaudeBot, Googlebot, and the rest.</p>
-    </div>
-  </section>
+  <Overnight digest={digest} />
 
-  <section class="grid-3" id="how">
-    <div class="tile">
-      <h3>1. We read the rules</h3>
-      <p>Once a day we fetch robots.txt — the public file that says which bots may look around.</p>
-    </div>
-    <div class="tile">
-      <h3>2. We turn it into a table</h3>
-      <p>Each site, each bot: blocked, allowed, mixed, or a blanket “block all bots”.</p>
-    </div>
-    <div class="tile">
-      <h3>3. You ask a real question</h3>
-      <p>“Swedish news vs GPTBot.” “UK shops vs ClaudeBot.” The figure is that slice, not a vibe.</p>
-    </div>
-  </section>
-
-  <section class="panel" id="sample">
-    <p class="kicker">The product</p>
-    <h2>A sample of 100 well-known sites.</h2>
+  <section class="famous" id="famous">
+    <p class="kicker">Sites you already know</p>
+    <h2>A wall of names. One sentence each.</h2>
     <p class="sub">
-      Same filters as the full table. Same bots. One hundred names you already know — so you can see what you are buying.
+      Same reading as the full list of {panel}. These are just the ones you can picture.
     </p>
-    <MarketTable agents={agents} mode="preview" pack={preview} />
-    <div class="paywall-band">
-      <p>Full table {PRICE_LABEL}. History — who flipped, and when — {HISTORY_PRICE_LABEL}.</p>
-      <a class="btn btn-primary" href="/pricing">Subscribe today</a>
+    <div class="famous-grid">
+      {famous.map((view) => (
+        <SiteCard view={view} compact={true} />
+      ))}
     </div>
   </section>
+
+  <div class="paywall-band">
+    <p>
+      Want every site, the filters, and a file? Full table {PRICE_LABEL}.
+      Who flipped, and when — {HISTORY_PRICE_LABEL}.
+    </p>
+    <a class="btn btn-primary" href="/pricing">Subscribe</a>
+  </div>
 </Layout>

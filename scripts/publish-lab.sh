@@ -38,6 +38,12 @@ if mkdir -p /var/www/cpi/snapshot 2>/dev/null; then
     chmod 644 /var/www/cpi/snapshot/events.json
     echo "snapshot events.json on this host (history plan)"
   fi
+  DIGEST="$ROOT/site/tracker/src/data/digest.json"
+  if [[ -f "$DIGEST" ]]; then
+    cp "$DIGEST" /var/www/cpi/snapshot/digest.json
+    chmod 644 /var/www/cpi/snapshot/digest.json
+    echo "snapshot https://crawlpolicyindex.org/snapshot/digest.json"
+  fi
   published=1
 else
   echo "WARNING: could not write /var/www/cpi/snapshot/lab.json" >&2

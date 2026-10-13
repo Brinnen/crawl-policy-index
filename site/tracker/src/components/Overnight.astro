@@ -1,0 +1,66 @@
+---
+import { changeSentence } from "../lib/story";
+
+type DigestItem = { date: string; domain: string; agent: string; kind: string };
+type Digest = {
+  as_of?: string;
+  blocked?: number;
+  unblocked?: number;
+  named?: number;
+  changed?: number;
+  items?: DigestItem[];
+};
+
+interface Props {
+  digest: Digest | null;
+}
+
+const { digest } = Astro.props;
+const asOf = digest?.as_of || "";
+const blocked = Number(digest?.blocked || 0);
+const unblocked = Number(digest?.unblocked || 0);
+const changed = Number(digest?.changed || 0);
+const items = (digest?.items || []).slice(0, 8);
+function shortDate(iso: string) {
+  if (!iso) return "";
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
+}
+const dateLabel = asOf
+  ? new Date(`${asOf}T00:00:00Z`).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    })
+  : "";
+---
+<section class="overnight" id="overnight">
+  <p class="kicker">What changed</p>
+  {changed ? (
+    <>
+      <h2>
+        On {dateLabel}, {blocked.toLocaleString("en-US")} sites started blocking a bot.
+        {unblocked ? ` ${unblocked.toLocaleString("en-US")} opened the door.` : ""}
+      </h2>
+      <ul class="overnight-list">
+        {items.map((item) => (
+          <li>
+            <a href={`/domain/${encodeURIComponent(item.domain)}`}>
+              <span class="overnight-when">{shortDate(item.date)}</span>
+              {changeSentence(item.kind, item.domain, item.agent)}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </>
+  ) : (
+    <>
+      <h2>Overnight changes land here after each daily read.</h2>
+      <p class="sub">When a site blocks, unblocks, or names a crawler, it becomes a sentence — not a log line.</p>
+    </>
+  )}
+</section>

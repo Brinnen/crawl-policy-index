@@ -1,0 +1,40 @@
+---
+interface Props {
+  autofocus?: boolean;
+  value?: string;
+}
+
+const { autofocus = false, value = "" } = Astro.props;
+---
+<form class="lookup-form" data-lookup method="get" action="/domain">
+  <label>
+    <span class="sr-only">Website</span>
+    <input
+      type="search"
+      name="q"
+      value={value}
+      placeholder="nytimes.com"
+      autocomplete="off"
+      spellcheck="false"
+      autofocus={autofocus}
+      data-lookup-input
+    />
+  </label>
+  <button class="btn btn-primary" type="submit">Look it up</button>
+</form>
+<p class="lookup-hint">Any site on the 100,000 we watch. No account.</p>
+<script>
+  const form = document.querySelector("[data-lookup]") as HTMLFormElement | null;
+  const input = document.querySelector("[data-lookup-input]") as HTMLInputElement | null;
+  form?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    let host = (input?.value || "").trim().toLowerCase();
+    host = host.replace(/^https?:\/\//, "").split("/")[0] || "";
+    host = host.replace(/^www\./, "").replace(/\.$/, "");
+    if (!host) {
+      input?.focus();
+      return;
+    }
+    window.location.href = `/domain/${encodeURIComponent(host)}`;
+  });
+</script>

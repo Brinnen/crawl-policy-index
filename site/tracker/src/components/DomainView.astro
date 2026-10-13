@@ -1,59 +1,46 @@
 ---
-import { purposeLabel, STATE_LABELS } from "../lib/labels";
-
-export type DomainRow = {
-  domain: string;
-  state: string;
-  valid_from?: string;
-  agent_slug?: string;
-  token?: string;
-  agent?: string;
-  operator?: string;
-  purpose?: string;
-  kind?: string;
-  group_key?: string;
-};
+import LookupForm from "./LookupForm.astro";
+import SiteCard from "./SiteCard.astro";
+import { PRICE_LABEL } from "../lib/access";
+import { loadSiteView } from "../lib/lookupPack";
+import { normalizeDomain } from "../lib/story";
 
 interface Props {
   domain: string;
-  rows: DomainRow[];
 }
 
-const { domain, rows } = Astro.props;
+const { domain: raw } = Astro.props;
+const domain = normalizeDomain(raw);
+const view = domain ? await loadSiteView(domain) : null;
 ---
 <div class="page-head">
-  <p class="kicker">Website</p>
-  <h1 data-domain-heading>{domain || "Website"}</h1>
+  <p class="kicker">Look up</p>
+  <h1>{view ? view.domain : domain || "Pick a website"}</h1>
 </div>
-<section class="panel" data-domain-page={domain}>
-  <h2>Bots this site named</h2>
-  <p class="sub">Named bots this website wrote down, plus a blanket “block all bots” rule if it has one.</p>
-  <table class="data">
-    <thead>
-      <tr>
-        <th>Bot</th>
-        <th>Company</th>
-        <th>What it’s for</th>
-        <th>What they said</th>
-        <th>Since</th>
-      </tr>
-    </thead>
-    <tbody data-domain-rows>
-      {rows.length === 0 ? (
-        <tr>
-          <td colspan="5" class="empty-cell">Loading this website…</td>
-        </tr>
-      ) : (
-        rows.map((row) => (
-          <tr>
-            <td>{row.token ?? row.agent ?? "GPTBot"}</td>
-            <td>{row.operator ?? "—"}</td>
-            <td>{purposeLabel(row.purpose)}</td>
-            <td>{row.kind === "blanket" || row.purpose === "blanket" ? "Block all bots" : (STATE_LABELS[row.state] ?? row.state)}</td>
-            <td>{row.valid_from}</td>
-          </tr>
-        ))
-      )}
-    </tbody>
-  </table>
-</section>
+
+{!domain && (
+  <p class="lede">Type a website on the list we watch. We'll say what it told the crawlers.</p>
+)}
+
+<LookupForm value={domain} autofocus={!domain} />
+
+{domain && view && (
+  <section class="panel story-panel">
+    <SiteCard view={view} />
+  </section>
+)}
+
+{domain && !view && (
+  <section class="panel">
+    <h2>{domain} is not on this list.</h2>
+    <p class="sub">
+      We watch a pinned 100,000 websites, not the whole web. Try wikipedia.org, svt.se, or a shop
+      you already know.
+    </p>
+  </section>
+)}
+
+<div class="paywall-band">
+  <p>Want every site on the list, filters, and a file of today's table?</p>
+  <a class="btn btn-primary" href="/pricing">Subscribe · {PRICE_LABEL}</a>
+</div>

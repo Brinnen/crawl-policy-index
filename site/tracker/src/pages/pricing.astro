@@ -11,20 +11,20 @@ const panel = Number(lab.summary.panel_size || 100000).toLocaleString("en-US");
 >
   <div class="page-head">
     <p class="kicker">Pricing</p>
-    <h1>The full table. Or the table plus history.</h1>
+    <h1>The stories are free. The full list is for people who need the number.</h1>
   </div>
   <p class="lede">
-    The homepage sample is 100 well-known sites. Subscribers get the whole {panel}-site table.
-    History subscribers also get every flip we recorded.
+    Anyone can look up a website. Subscribers get the whole {panel}-site table, the filters,
+    and a file. History subscribers also get every flip we recorded.
   </p>
   <section class="pricing-grid">
     <article class="pricing-card">
       <p class="kicker">Full table</p>
       <p class="price">{PRICE_LABEL}</p>
       <ul>
-        <li>{panel} websites on a pinned list</li>
+        <li>Look up any of {panel} websites, plus the full filterable table</li>
         <li>Filter by country, type of site, language, and bot</li>
-        <li>Named rules plus blanket “block all bots”</li>
+        <li>Download today's table as CSV</li>
         <li>Updated from the daily crawl</li>
       </ul>
       <a class="btn btn-primary" href="/api/checkout?plan=table">Subscribe today</a>

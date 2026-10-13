@@ -136,6 +136,90 @@ def write_events(path: Path, events: list) -> None:
     )
 
 
+def write_digest(
+    path: Path,
+    events: list,
+    showcase: list[str],
+    generated_at: str,
+) -> None:
+    interesting = {"blocked", "unblocked", "tightened", "loosened", "agent_named"}
+    as_of = str(events[0][0]) if events else ""
+    day = [row for row in events if str(row[0]) == as_of]
+    blocked = sum(1 for row in day if str(row[3]) == "blocked")
+    unblocked = sum(1 for row in day if str(row[3]) == "unblocked")
+    named = sum(1 for row in day if str(row[3]) == "agent_named")
+    changed = sum(1 for row in day if str(row[3]) in interesting)
+    dates: list[str] = []
+    seen_dates: set[str] = set()
+    for row in events:
+        day_key = str(row[0])
+        if day_key in seen_dates:
+            continue
+        seen_dates.add(day_key)
+        dates.append(day_key)
+        if len(dates) >= 14:
+            break
+    window = set(dates)
+    pool = [
+        row
+        for row in events
+        if str(row[0]) in window and str(row[3]) in interesting
+    ]
+    hosts = set(showcase)
+    kind_rank = {
+        "blocked": 0,
+        "unblocked": 1,
+        "tightened": 2,
+        "loosened": 3,
+        "agent_named": 4,
+    }
+    featured = [row for row in pool if row[1] in hosts]
+    featured.sort(key=lambda row: (kind_rank.get(str(row[3]), 9), str(row[1])))
+    featured.sort(key=lambda row: str(row[0]), reverse=True)
+    rest = [
+        row
+        for row in pool
+        if row[1] not in hosts
+        and str(row[2] or "")
+        and str(row[3]) in {"blocked", "unblocked"}
+    ]
+    rest.sort(key=lambda row: (kind_rank.get(str(row[3]), 9), str(row[1])))
+    rest.sort(key=lambda row: str(row[0]), reverse=True)
+    items: list[dict[str, str]] = []
+    seen_domain: set[str] = set()
+    for row in featured + rest:
+        domain = str(row[1])
+        if domain in seen_domain:
+            continue
+        seen_domain.add(domain)
+        items.append(
+            {
+                "date": str(row[0]),
+                "domain": domain,
+                "agent": str(row[2] or ""),
+                "kind": str(row[3]),
+            }
+        )
+        if len(items) >= 10:
+            break
+    path.write_text(
+        json.dumps(
+            {
+                "generated_at": generated_at,
+                "as_of": as_of,
+                "blocked": blocked,
+                "unblocked": unblocked,
+                "named": named,
+                "changed": changed,
+                "items": items,
+            },
+            separators=(",", ":"),
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 PREVIEW_HOSTS_SQL = """
 SELECT domain
 FROM panel_domain
@@ -527,6 +611,13 @@ def main(argv: list[str] | None = None) -> int:
     write_lookup(lookup_path, lookup_named, lookup_blanket, lookup_sites)
     events_path = out.with_name("events.json")
     write_events(events_path, lookup_events)
+    digest_path = out.with_name("digest.json")
+    write_digest(
+        digest_path,
+        lookup_events,
+        preview_hosts or showcase_hosts(),
+        payload["generated_at"],
+    )
     preview_path = out.with_name("preview.json")
     if preview_hosts:
         hostset = set(preview_hosts)
@@ -549,6 +640,7 @@ def main(argv: list[str] | None = None) -> int:
         f"blanket={len(lookup_blanket)} sites={len(lookup_sites)}"
     )
     print(f"wrote {events_path} events={len(lookup_events)}")
+    print(f"wrote {digest_path} digest as_of={lookup_events[0][0] if lookup_events else ''} items={min(10, len(lookup_events))}")
     return 0
 
 

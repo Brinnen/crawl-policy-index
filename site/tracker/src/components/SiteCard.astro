@@ -1,0 +1,66 @@
+---
+import { metaLine, type SiteView } from "../lib/story";
+
+interface Props {
+  view: SiteView;
+  compact?: boolean;
+}
+
+const { view, compact = false } = Astro.props;
+const meta = metaLine(view);
+const href = `/domain/${encodeURIComponent(view.domain)}`;
+const bots = compact ? view.bots.slice(0, 4) : view.bots;
+---
+<article class:list={["site-card", compact && "site-card-compact"]}>
+  {compact ? (
+    <a class="site-card-link" href={href}>
+      <p class="site-card-host">{view.domain}</p>
+      {meta && <p class="site-card-meta">{meta}</p>}
+      <h3 class="site-card-hed">{view.headline}</h3>
+      <ul class="bot-pills" aria-label="Main crawlers">
+        {bots.map((bot) => (
+          <li class={`bot-pill is-${bot.verdict.toLowerCase()}`}>
+            <span>{bot.short}</span>
+            <strong>{bot.label}</strong>
+          </li>
+        ))}
+      </ul>
+    </a>
+  ) : (
+    <>
+      <p class="site-card-host">{view.domain}</p>
+      {meta && <p class="site-card-meta">{meta}</p>}
+      <h2 class="site-card-hed">{view.headline}</h2>
+      {view.blanket === "BLOCKED" && (
+        <p class="site-card-note">This site also has a blanket rule: stay out, all bots.</p>
+      )}
+      <ul class="bot-rows">
+        {view.bots.map((bot) => (
+          <li class={`bot-row is-${bot.verdict.toLowerCase()}`}>
+            <div>
+              <strong>{bot.short}</strong>
+              <span>{bot.line}</span>
+            </div>
+            <em>{bot.label}</em>
+          </li>
+        ))}
+      </ul>
+      {view.extras.length > 0 && (
+        <details class="site-more">
+          <summary>Other bots this site named</summary>
+          <ul class="bot-rows bot-rows-more">
+            {view.extras.map((bot) => (
+              <li class={`bot-row is-${bot.verdict.toLowerCase()}`}>
+                <div>
+                  <strong>{bot.token}</strong>
+                  <span>{bot.operator}</span>
+                </div>
+                <em>{bot.label}</em>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </>
+  )}
+</article>
