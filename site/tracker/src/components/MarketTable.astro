@@ -177,14 +177,13 @@ const preview = mode === "preview";
         if (namedState === "BLOCKED" || namedState === "ALLOWED" || namedState === "PARTIAL") return namedState;
         const star = blanketBy.get(domain);
         if (star === "BLOCKED") return "BLANKET";
-        if (star === "PARTIAL") return "PARTIAL";
         return "ALLOWED";
       }
       function label(v: string) {
         if (v === "BLANKET") return `<span class="badge badge-blanket">Block all bots</span>`;
         if (v === "BLOCKED") return `<span class="badge badge-block">Blocked</span>`;
         if (v === "ALLOWED") return `<span class="badge badge-allow">Allowed</span>`;
-        if (v === "PARTIAL") return `<span class="badge badge-partial">Mixed</span>`;
+        if (v === "PARTIAL") return `<span class="badge badge-partial">Some paths</span>`;
         return "—";
       }
       if (coverage && !preview) {

@@ -104,7 +104,7 @@ export function normalizeDomain(raw: string): string {
 export function verdictLabel(verdict: Verdict): string {
   if (verdict === "BLOCKED" || verdict === "BLANKET") return "Blocked";
   if (verdict === "ALLOWED") return "Allowed";
-  if (verdict === "PARTIAL") return "Mixed";
+  if (verdict === "PARTIAL") return "Some paths";
   return "Didn't say";
 }
 
@@ -174,10 +174,11 @@ export function verdictFor(
   blanketBy: Map<string, string>,
 ): Verdict {
   const named = namedBy.get(domain)?.get(slug);
+  // Mixed path rules belong on a bot only when that bot was named.
+  // The * group is a rule for crawlers in general — do not copy it onto GPTBot.
   if (named === "BLOCKED" || named === "ALLOWED" || named === "PARTIAL") return named;
   const star = blanketBy.get(domain);
   if (star === "BLOCKED") return "BLANKET";
-  if (star === "PARTIAL") return "PARTIAL";
   return "DEFAULT";
 }
 
@@ -204,20 +205,22 @@ function headlineFor(domain: string, bots: BotChip[], blanket: string): string {
     .filter((bot) => bot.verdict === "BLOCKED" || bot.verdict === "BLANKET")
     .map((bot) => bot.line);
   const allowed = bots.filter((bot) => bot.verdict === "ALLOWED").map((bot) => bot.line);
-  const mixed = bots.filter((bot) => bot.verdict === "PARTIAL").map((bot) => bot.line);
+  const somePaths = bots.filter((bot) => bot.verdict === "PARTIAL").map((bot) => bot.line);
   if (blanket === "BLOCKED" && blocked.length >= 3) {
     return `${domain} told every crawler to stay out.`;
   }
   const parts: string[] = [];
   if (blocked.length) parts.push(`blocks ${andList(blocked)}`);
-  if (mixed.length && !blocked.length) parts.push(`has mixed rules for ${andList(mixed)}`);
-  else if (mixed.length) parts.push(`mixed rules for ${andList(mixed)}`);
+  if (somePaths.length) parts.push(`lets ${andList(somePaths)} into some paths only`);
   if (allowed.length) {
     const allowBit = `still allows ${andList(allowed)}`;
     if (parts.length) return `${domain} ${parts[0]}. It ${allowBit}.`;
     return `${domain} named a yes for ${andList(allowed)}.`;
   }
   if (parts.length) return `${domain} ${parts.join(", and ")}.`;
+  if (blanket === "PARTIAL") {
+    return `${domain} did not name the main AI crawlers. Its all-bots rule is mixed — some paths open, some closed.`;
+  }
   return `${domain} did not name the main AI crawlers. By default, they may crawl.`;
 }
 
