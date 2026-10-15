@@ -44,3 +44,9 @@ fi
   date -u +%Y-%m-%dT%H:%M:%SZ >"$ROOT/data/logs/last-ok"
   echo "==== $(date -u +%Y-%m-%dT%H:%M:%SZ) ok ===="
 } >>"$log" 2>&1
+
+# Leftover hours: robots-only 1M queue. Child must not inherit this lock.
+if [[ -x "$ROOT/scripts/fill-1m.sh" ]]; then
+  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) starting leftover-hours 1M fill" >>"$log"
+  nohup bash "$ROOT/scripts/fill-1m.sh" >/dev/null 2>&1 8>&- 9>&- 10>&- &
+fi
